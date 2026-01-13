@@ -1,0 +1,14 @@
+# Carpetas de dependencias
+node_modules/
+vendor/
+
+# Variables de entorno (Seguridad)
+.env
+.env.local
+
+# Docker data (para que tu DB local no se suba)
+docker/postgres_data/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
