@@ -1,0 +1,18 @@
+services:
+  # El servidor de la base de datos
+  db-tfg:
+    image: postgres:15
+    container_name: contenedor_postgres
+    environment:
+      - POSTGRES_DB=halconero_db
+      - POSTGRES_USER=gonzalo
+      - POSTGRES_PASSWORD=gonzalo
+    ports:
+      - "5432:5432"
+
+  # Una herramienta web para ver las tablas (como phpMyAdmin pero para Postgres)
+  adminer-tfg:
+    image: adminer
+    container_name: contenedor_adminer
+    ports:
+      - "8080:8080"
