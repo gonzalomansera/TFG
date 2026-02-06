@@ -75,13 +75,4 @@ Este proyecto no solo representa la culminación del **Ciclo Formativo de DAW**,
 
 ## Backend
 
-En primer lugar, se procederá a la configuración del **backend**.  
-Dado que se utilizará **Symfony** como framework principal, se comenzará preparando el **esqueleto del proyecto**, sobre el cual se desarrollará toda la lógica de negocio y la API del sistema.
-
-
-![Instalacion de symfony](img/EsqueletoSymfony.png)
-
-Una vez realizada la instalacion procedemos a configurar el docker-compose.yml de la siguiente manera para conectar Symfony y PostgreSQL.
-
-![docker-compose](img/compose.png)
 
