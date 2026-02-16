@@ -21,7 +21,7 @@ const Footer = ({ isAdmin, setIsAdmin }: FooterProps) => {
           
           {/* SOBRE EL ARTISTA */}
           <div className="space-y-4">
-            <h3 className="text-[#E08733] text-[10px] font-bold uppercase tracking-[0.3em]">H4LCONERO</h3>
+            <h3 className="text-[#E08733] text-[10px] font-bold uppercase tracking-[0.3em]">HALCONERO</h3>
             <p className="text-gray-500 text-[11px] leading-relaxed max-w-xs font-light">
               Fusión de técnicas clásicas de restauración e imaginería con la expresión contemporánea del tatuaje.
             </p>
@@ -62,7 +62,7 @@ const Footer = ({ isAdmin, setIsAdmin }: FooterProps) => {
           
           <div className="flex items-center gap-6">
             <span className="text-[9px] text-gray-700 uppercase tracking-widest italic">
-              Ars longa, vita brevis
+              Web realizada por Gonzalo Mansera Ruiz
             </span>
             
             {/* BOTÓN DE LOGOUT DISCRETO */}

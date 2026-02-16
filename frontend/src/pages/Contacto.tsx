@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { Send, MapPin, Instagram, Mail, Calendar, MessageSquare } from 'lucide-react';
-import axios from 'axios';
 
 export const Contacto = () => {
   const [enviado, setEnviado] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Estado para el formulario
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
     telefono: '',
-    tipo: 'Cita Tatuaje', // Valor por defecto
+    tipo: 'Cita Tatuaje',
     idea: ''
   });
 
@@ -20,21 +18,32 @@ export const Contacto = () => {
     setLoading(true);
     
     try {
-      // Enviamos a tu endpoint de FastAPI que creamos antes
-      await axios.post('http://localhost:8000/citas/', {
-        nombre: formData.nombre,
-        email: formData.email,
-        telefono: formData.telefono,
-        idea: formData.idea,
-        fecha_sugerida: "A convenir" // O puedes añadir un input de fecha
-      }, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      // Usamos la URL de Formspree que me has pasado
+      const response = await fetch('https://formspree.io/f/xjgerbjv', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          Nombre: formData.nombre,
+          Email: formData.email,
+          Telefono: formData.telefono,
+          Motivo: formData.tipo,
+          Propuesta: formData.idea
+        })
       });
-      
-      setEnviado(true);
+
+      if (response.ok) {
+        setEnviado(true);
+        // Limpiamos el formulario
+        setFormData({ nombre: '', email: '', telefono: '', tipo: 'Cita Tatuaje', idea: '' });
+      } else {
+        alert("Error al enviar el formulario. Por favor, inténtalo de nuevo.");
+      }
     } catch (error) {
       console.error("Error al enviar:", error);
-      alert("Hubo un error al enviar el formulario.");
+      alert("Hubo un error de conexión.");
     } finally {
       setLoading(false);
     }
@@ -43,7 +52,6 @@ export const Contacto = () => {
   return (
     <section className="min-h-screen bg-[#2a2a2a] pt-12 pb-24 px-6">
       <div className="max-w-6xl mx-auto">
-        
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold tracking-[0.4em] uppercase mb-4">Citas & Contacto</h2>
           <div className="h-1 w-20 bg-[#E08733] mx-auto"></div>
@@ -53,7 +61,6 @@ export const Contacto = () => {
         </div>
 
         <div className="grid lg:grid-cols-5 gap-12">
-          
           {/* Columna Izquierda: Info Directa */}
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-white/5">
@@ -99,11 +106,11 @@ export const Contacto = () => {
             </div>
           </div>
 
-          {/* Columna Derecha: Formulario Inteligente */}
+          {/* Columna Derecha: Formulario */}
           <div className="lg:col-span-3">
             <div className="bg-[#1a1a1a] p-10 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden">
               {enviado ? (
-                <div className="text-center py-20 animate-in fade-in zoom-in">
+                <div className="text-center py-20">
                    <div className="w-16 h-16 bg-[#E08733]/20 text-[#E08733] rounded-full flex items-center justify-center mx-auto mb-6">
                     <Send size={30} />
                   </div>
@@ -118,10 +125,11 @@ export const Contacto = () => {
                       <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Nombre Completo</label>
                       <input 
                         type="text" 
+                        name="nombre"
                         required 
                         value={formData.nombre}
                         onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                        className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all" 
+                        className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all text-white" 
                         placeholder="EJ. JUAN PÉREZ"
                       />
                     </div>
@@ -129,10 +137,11 @@ export const Contacto = () => {
                       <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Teléfono</label>
                       <input 
                         type="tel" 
+                        name="telefono"
                         required 
                         value={formData.telefono}
                         onChange={(e) => setFormData({...formData, telefono: e.target.value})}
-                        className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all" 
+                        className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all text-white" 
                         placeholder="600 000 000"
                       />
                     </div>
@@ -142,10 +151,11 @@ export const Contacto = () => {
                     <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Email de contacto</label>
                     <input 
                       type="email" 
+                      name="email"
                       required 
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all" 
+                      className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all text-white" 
                       placeholder="TU@EMAIL.COM"
                     />
                   </div>
@@ -153,6 +163,7 @@ export const Contacto = () => {
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Asunto / Motivo</label>
                     <select 
+                      name="motivo"
                       value={formData.tipo}
                       onChange={(e) => setFormData({...formData, tipo: e.target.value})}
                       className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all text-gray-300"
@@ -168,11 +179,12 @@ export const Contacto = () => {
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Cuéntame tu idea</label>
                     <textarea 
+                      name="mensaje"
                       rows={4} 
                       required 
                       value={formData.idea}
                       onChange={(e) => setFormData({...formData, idea: e.target.value})}
-                      className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all resize-none" 
+                      className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all resize-none text-white" 
                       placeholder="DESCRIBE TU PROYECTO, TAMAÑO, ZONA..."
                     ></textarea>
                   </div>

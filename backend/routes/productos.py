@@ -45,3 +45,27 @@ def reducir_stock(producto_id: int, cantidad: int, db: Session = Depends(get_db)
     producto.stock -= cantidad
     db.commit()
     return {"message": "Stock actualizado", "nuevo_stock": producto.stock}
+
+@router.delete("/{id}")
+def eliminar_producto(id: int, db: Session = Depends(get_db)):
+    # 1. Buscar el producto
+    producto = db.query(models.Producto).filter(models.Producto.id == id).first()
+    
+    # 2. Si no existe, error 404
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    # 3. Borrar la imagen física para no dejar basura en el servidor
+    try:
+        # Extraemos la ruta (ej: uploads/camiseta.jpg)
+        ruta_foto = producto.imagen_url.replace("http://localhost:8000/", "")
+        if os.path.exists(ruta_foto):
+            os.remove(ruta_foto)
+    except Exception as e:
+        print(f"Error al borrar archivo físico: {e}")
+
+    # 4. Borrar de la base de datos
+    db.delete(producto)
+    db.commit()
+    
+    return {"mensaje": "Producto eliminado correctamente"}

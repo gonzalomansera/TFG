@@ -3,27 +3,23 @@ import { useState, useEffect } from 'react';
 
 // Páginas y Componentes
 import { Merchandising } from './pages/Merchandising';
-import Home from './pages/Home';
+
 import Footer from './components/Footer';
 import { Obras } from './pages/Obras'; 
 import { CarritoView } from './components/CarritoView';
 import { Trayectoria } from './components/Trayectoria';
 import NavBar from './components/NavBar';
 import { Contacto } from './pages/Contacto';
-import { Blog } from './components/Blog';
-import { Login } from './pages/Login'; // Importamos el nuevo componente de Login
+import { Blog } from './pages/Blog';
+import { Login } from './pages/Login';
+import { Home } from './pages/Home';
 
 function App() {
-  // Inicializamos isAdmin consultando localStorage para que la sesión no se pierda al recargar
   const [isAdmin, setIsAdmin] = useState(() => {
     return localStorage.getItem('halconero_admin') === 'true';
   });
 
   const [carritoAbierto, setCarritoAbierto] = useState(false);
-  const [mostrarFormObra, setMostrarFormObra] = useState(false);
-  const [mostrarFormMerch, setMostrarFormMerch] = useState(false);
-
-  // Mantenemos el soporte para ?admin=true por si acaso, pero priorizamos el login
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('admin') === 'true') {
@@ -38,8 +34,10 @@ function App() {
         <NavBar 
           isAdmin={isAdmin} 
           onOpenCarrito={() => setCarritoAbierto(true)} 
-          setMostrarForm={setMostrarFormObra}
-          setMostrarFormMerch={setMostrarFormMerch}
+          // 2. IMPORTANTE: Estos setters solo funcionarán si el NavBar 
+          // los llama, pero ahora las páginas tienen sus propios botones internos.
+          setMostrarForm={() => {}} 
+          setMostrarFormMerch={() => {}}
         />
         
         <main className="pt-20"> 
@@ -47,11 +45,13 @@ function App() {
             <Route path="/" element={<Home isAdmin={isAdmin} />} />
             <Route path="/recorrido" element={<Trayectoria />} />
             <Route path="/merchandising" element={<Merchandising isAdmin={isAdmin} />} />
-            <Route path="/obras" element={<Obras />} />
+            
+            {/* 3. ¡ESTO FALTABA! Añadir isAdmin aquí para que aparezca el botón de Añadir Obra */}
+            <Route path="/obras" element={<Obras isAdmin={isAdmin} />} />
+            
             <Route path="/contacto" element={<Contacto />} />
             <Route path="/blog" element={<Blog isAdmin={isAdmin} />} />
             
-            {/* RUTA SECRETA DE LOGIN: No aparece en el NavBar */}
             <Route path="/gestor-halconero" element={<Login setIsAdmin={setIsAdmin} />} />
             
             <Route path="*" element={<Home isAdmin={isAdmin} />} />

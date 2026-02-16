@@ -26,11 +26,13 @@ class Cita(Base):
     estado = Column(String, default="pendiente")
 
 class Post(Base):
-    __tablename__ = "blog"
+    __tablename__ = "posts"
     id = Column(Integer, primary_key=True, index=True)
     titulo = Column(String)
     contenido = Column(Text)
+    categoria = Column(String)
     imagen_url = Column(String)
+    fecha = Column(String) 
     
 class Producto(Base):
     __tablename__ = "merchandising"

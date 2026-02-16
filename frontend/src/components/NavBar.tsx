@@ -51,23 +51,6 @@ const NavBar = ({ isAdmin, setMostrarForm, setMostrarFormMerch, onOpenCarrito }:
               </span>
             )}
           </button>
-          
-          {isAdmin && (
-            <div className="flex gap-2 ml-4">
-              <button 
-                onClick={() => setMostrarForm(true)}
-                className="text-[#E08733] border border-[#E08733]/40 px-3 py-1 hover:bg-[#E08733] hover:text-black transition-all text-[9px] font-bold uppercase tracking-widest"
-              >
-                OBRA +
-              </button>
-              <button 
-                onClick={() => setMostrarFormMerch(true)}
-                className="text-white border border-white/20 px-3 py-1 hover:bg-white hover:text-black transition-all text-[9px] font-bold uppercase tracking-widest"
-              >
-                MERCH +
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </nav>
