@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Palette, Package, BookOpen, ArrowRight, MousePointer2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export const Home = () => {
   const [ultimaObra, setUltimaObra] = useState<any>(null);
@@ -9,15 +11,14 @@ export const Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const resObras = await fetch('http://localhost:8000/obras/');
+        const resObras = await fetch(`${BASE_URL}/obras/`);
         const obrasData = await resObras.json();
         if (obrasData.length > 0) setUltimaObra(obrasData[obrasData.length - 1]);
 
-        const resProd = await fetch('http://localhost:8000/productos/');
+        const resProd = await fetch(`${BASE_URL}/productos/`);
         const prodData = await resProd.json();
         setProductos(prodData.slice(0, 4));
       } catch (e) {
-        console.error("Error cargando Home:", e);
       }
     };
     fetchData();
@@ -90,7 +91,7 @@ export const Home = () => {
       <section className="py-24 bg-[#141414] border-y border-white/5">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-4">
-            <h2 className="text-xs uppercase tracking-[0.6em] font-bold text-white/40">Selected Merch</h2>
+            <h2 className="text-xs uppercase tracking-[0.6em] font-bold text-white/40">Merchandising</h2>
             <div className="h-[1px] flex-1 bg-white/5 mx-8 hidden md:block"></div>
             <Link to="/merchandising" className="text-[9px] uppercase tracking-widest bg-white text-black px-6 py-2 rounded-full font-bold hover:bg-[#E08733] transition-colors">Tienda Online</Link>
           </div>

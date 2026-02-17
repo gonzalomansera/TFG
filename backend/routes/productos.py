@@ -3,8 +3,12 @@ from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 import models
+from dotenv import load_dotenv
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
+# Variables de entorno 
+load_dotenv()
+BASE_URL = os.getenv("API_URL", "http://localhost:8000")
 
 @router.get("/")
 def obtener_productos(db: Session = Depends(get_db)):
@@ -23,7 +27,7 @@ async def crear_producto(
     with open(ruta_archivo, "wb") as buffer:
         buffer.write(await imagen.read())
     
-    url_imagen = f"http://localhost:8000/uploads/{imagen.filename}"
+    url_imagen = f"{BASE_URL}/uploads/{imagen.filename}"
     
     nuevo_producto = models.Producto(
         nombre=nombre, descripcion=descripcion, precio=precio,
@@ -58,7 +62,7 @@ def eliminar_producto(id: int, db: Session = Depends(get_db)):
     # 3. Borrar la imagen física para no dejar basura en el servidor
     try:
         # Extraemos la ruta (ej: uploads/camiseta.jpg)
-        ruta_foto = producto.imagen_url.replace("http://localhost:8000/", "")
+        ruta_foto = producto.imagen_url.replace(BASE_URL, "")
         if os.path.exists(ruta_foto):
             os.remove(ruta_foto)
     except Exception as e:

@@ -1,8 +1,15 @@
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-import models, shutil, os
+import models, shutil
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+
+# Variables de entorno 
+load_dotenv()
+BASE_URL = os.getenv("API_URL", "http://localhost:8000")
 
 router = APIRouter(prefix="/blog", tags=["Blog"])
 
@@ -26,7 +33,7 @@ def crear_post(
         titulo=titulo,
         contenido=contenido,
         categoria=categoria,
-        imagen_url=f"http://localhost:8000/{ruta}",
+        imagen_url=f"{BASE_URL}/{ruta}",
         fecha=datetime.now().strftime("%d %b, %Y")
     )
     db.add(nuevo_post)

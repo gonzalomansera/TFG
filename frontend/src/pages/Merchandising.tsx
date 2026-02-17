@@ -3,6 +3,8 @@ import { Package, X, Plus } from 'lucide-react'
 import { ProductCard } from '../components/ProductCard'
 import type { Producto } from '../types/AppContextType'
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+
 export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
   const [productos, setProductos] = useState<Producto[]>([])
   const [mostrarForm, setMostrarForm] = useState(false)
@@ -17,7 +19,7 @@ export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
 
   const fetchProductos = async () => {
     try {
-      const res = await fetch('http://localhost:8000/productos/')
+      const res = await fetch(`${BASE_URL}/productos/`)
       if (res.ok) {
         const data = await res.json()
         setProductos(data)
@@ -55,8 +57,8 @@ export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
     if (archivo) formData.append('imagen', archivo)
 
     const url = idEnEdicion 
-      ? `http://localhost:8000/productos/${idEnEdicion}` 
-      : 'http://localhost:8000/productos/'
+      ? `${BASE_URL}/productos/${idEnEdicion}` 
+      : `${BASE_URL}/productos/`
     
     const method = idEnEdicion ? 'PUT' : 'POST'
 
@@ -75,7 +77,7 @@ export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
   const handleDelete = async (id: number) => {
     if (!window.confirm("¿Deseas eliminar este producto de la tienda?")) return
     try {
-      const response = await fetch(`http://localhost:8000/productos/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${BASE_URL}/productos/${id}`, { method: 'DELETE' });
       if (response.ok) {
         setProductos(prevProductos => prevProductos.filter(p => p.id !== id));
       }

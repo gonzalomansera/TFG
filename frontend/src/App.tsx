@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 
 // Páginas y Componentes
 import { Merchandising } from './pages/Merchandising';
-
 import Footer from './components/Footer';
 import { Obras } from './pages/Obras'; 
 import { CarritoView } from './components/CarritoView';

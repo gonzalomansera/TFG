@@ -1,5 +1,7 @@
-import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
-import { Palette, X, Plus, Trash2, Edit2 } from 'lucide-react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { Plus, Trash2, Edit2 } from 'lucide-react';
+
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 interface Obra {
   id: number;
@@ -26,10 +28,12 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
 
   const fetchObras = async () => {
     try {
-      const res = await fetch('http://localhost:8000/obras/');
+      const res = await fetch(`${BASE_URL}/obras/`);
       if (res.ok) {
         const data = await res.json();
         setObras(data);
+      } else {
+        console.error("Fetch failed:", res.statusText);
       }
     } catch (error) {
       console.error("Error cargando obras:", error);
@@ -67,7 +71,7 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
     formData.append('tipo', tipo);
     if (archivo) formData.append('imagen', archivo);
 
-    const url = idEnEdicion ? `http://localhost:8000/obras/${idEnEdicion}` : 'http://localhost:8000/obras/';
+    const url = idEnEdicion ? `${BASE_URL}/obras/${idEnEdicion}` : `${BASE_URL}/obras/`;
     const metodo = idEnEdicion ? 'PUT' : 'POST';
 
     try {
@@ -83,7 +87,7 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("¿Eliminar obra?")) return;
-    const response = await fetch(`http://localhost:8000/obras/${id}`, { method: 'DELETE' });
+    const response = await fetch(`${BASE_URL}/obras/${id}`, { method: 'DELETE' });
     if (response.ok) setObras(prev => prev.filter(o => o.id !== id));
   };
 
@@ -107,9 +111,8 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
           <button
             key={cat}
             onClick={() => setFiltroActivo(cat)}
-            className={`pb-4 text-[11px] uppercase tracking-[0.4em] transition-all relative ${
-              filtroActivo === cat ? 'text-[#E08733] font-bold' : 'text-gray-500 hover:text-white'
-            }`}
+            className={`pb-4 text-[11px] uppercase tracking-[0.4em] transition-all relative ${filtroActivo === cat ? 'text-[#E08733] font-bold' : 'text-gray-500 hover:text-white'
+              }`}
           >
             {cat}
             {filtroActivo === cat && (
@@ -124,9 +127,9 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
         {obrasFiltradas.length > 0 ? (
           obrasFiltradas.map((obra) => (
             <div key={obra.id} className="relative group break-inside-avoid rounded-sm overflow-hidden bg-[#1a1a1a]">
-              <img 
-                src={obra.imagen_url} 
-                className="w-full grayscale hover:grayscale-0 transition-all duration-700 cursor-crosshair" 
+              <img
+                src={obra.imagen_url}
+                className="w-full grayscale hover:grayscale-0 transition-all duration-700 cursor-crosshair"
                 onClick={() => setObraSeleccionada(obra)}
               />
               {isAdmin && (
@@ -160,13 +163,13 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               <input type="text" placeholder="Título de la obra" className="w-full bg-transparent border-b border-white/10 py-2 outline-none focus:border-[#E08733] text-xs uppercase" value={titulo} onChange={e => setTitulo(e.target.value)} required />
-              
+
               <select className="w-full bg-[#1a1a1a] border border-white/10 p-3 outline-none text-xs uppercase text-gray-400" value={tipo} onChange={e => setTipo(e.target.value)}>
                 {categorias.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
 
               <textarea placeholder="Descripción..." className="w-full bg-transparent border-b border-white/10 py-2 outline-none focus:border-[#E08733] text-xs h-20 resize-none" value={desc} onChange={e => setDesc(e.target.value)} />
-              
+
               <input type="file" className="text-[10px] text-gray-500" onChange={(e) => setArchivo(e.target.files?.[0] || null)} required={!idEnEdicion} />
 
               <button type="submit" className="w-full bg-white text-black py-4 font-bold uppercase text-[10px] tracking-widest hover:bg-[#E08733] transition-all">
@@ -181,15 +184,15 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
       {/* MODAL DETALLE */}
       {obraSeleccionada && (
         <div className="fixed inset-0 z-[150] bg-black/98 flex items-center justify-center p-4 md:p-12" onClick={() => setObraSeleccionada(null)}>
-            <div className="relative max-w-6xl w-full flex flex-col md:flex-row gap-12" onClick={e => e.stopPropagation()}>
-                <img src={obraSeleccionada.imagen_url} className="max-h-[70vh] object-contain shadow-2xl" />
-                <div className="flex flex-col justify-center space-y-6 max-w-sm">
-                    <span className="text-[#E08733] text-[10px] font-bold uppercase tracking-[0.5em]">{obraSeleccionada.tipo}</span>
-                    <h3 className="text-4xl font-serif italic text-white">{obraSeleccionada.titulo}</h3>
-                    <p className="text-gray-400 text-xs leading-relaxed font-light">{obraSeleccionada.descripcion}</p>
-                    <button onClick={() => setObraSeleccionada(null)} className="text-white/30 hover:text-white text-[10px] uppercase tracking-widest text-left pt-8">← Cerrar detalle</button>
-                </div>
+          <div className="relative max-w-6xl w-full flex flex-col md:flex-row gap-12" onClick={e => e.stopPropagation()}>
+            <img src={obraSeleccionada.imagen_url} className="max-h-[70vh] object-contain shadow-2xl" />
+            <div className="flex flex-col justify-center space-y-6 max-w-sm">
+              <span className="text-[#E08733] text-[10px] font-bold uppercase tracking-[0.5em]">{obraSeleccionada.tipo}</span>
+              <h3 className="text-4xl font-serif italic text-white">{obraSeleccionada.titulo}</h3>
+              <p className="text-gray-400 text-xs leading-relaxed font-light">{obraSeleccionada.descripcion}</p>
+              <button onClick={() => setObraSeleccionada(null)} className="text-white/30 hover:text-white text-[10px] uppercase tracking-widest text-left pt-8">← Cerrar detalle</button>
             </div>
+          </div>
         </div>
       )}
     </section>

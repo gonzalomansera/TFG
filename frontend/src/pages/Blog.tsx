@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Plus, Trash2, X } from 'lucide-react';
+import {Plus, Trash2, X } from 'lucide-react';
+
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 interface Post {
   id: number;
@@ -21,7 +23,7 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
   const [archivo, setArchivo] = useState<File | null>(null);
 
   const fetchPosts = async () => {
-    const res = await fetch('http://localhost:8000/blog/');
+    const res = await fetch(`${BASE_URL}/blog/`);
     if (res.ok) setPosts(await res.json());
   };
 
@@ -35,7 +37,7 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
     formData.append('categoria', categoria);
     if (archivo) formData.append('imagen', archivo);
 
-    const res = await fetch('http://localhost:8000/blog/', { method: 'POST', body: formData });
+    const res = await fetch(`${BASE_URL}/blog/`, { method: 'POST', body: formData });
     if (res.ok) {
       setMostrarForm(false);
       fetchPosts();
@@ -44,7 +46,7 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
 
   const deletePost = async (id: number) => {
     if (!window.confirm("¿Borrar post?")) return;
-    await fetch(`http://localhost:8000/blog/${id}`, { method: 'DELETE' });
+    await fetch(`${BASE_URL}/blog/${id}`, { method: 'DELETE' });
     setPosts(posts.filter(p => p.id !== id));
   };
 

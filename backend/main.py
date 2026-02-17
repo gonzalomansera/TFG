@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 from database import engine, Base
 # 1. IMPORTAMOS EL NUEVO ROUTER
-from routes import productos, obras, citas, blog 
+from routes import productos, obras, blog
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,7 +25,6 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # 2. REGISTRAMOS EL ROUTER DEL BLOG
 app.include_router(productos.router)
 app.include_router(obras.router)
-app.include_router(citas.router)
 app.include_router(blog.router) 
 
 @app.get("/")

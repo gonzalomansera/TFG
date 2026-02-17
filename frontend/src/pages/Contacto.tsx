@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Send, MapPin, Instagram, Mail, Calendar, MessageSquare } from 'lucide-react';
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+
 export const Contacto = () => {
   const [enviado, setEnviado] = useState(false);
   const [loading, setLoading] = useState(false);

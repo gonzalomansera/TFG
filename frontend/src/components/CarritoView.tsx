@@ -3,6 +3,7 @@ import { X, Plus, Minus, Trash2, ShoppingBag, CreditCard, Smartphone, Truck, Arr
 import { useCarrito } from '../context/CarritoContext';
 import axios from 'axios';
 
+const BASE_URL = import.meta.env.VITE_API_URL;
 interface CarritoViewProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,7 +26,7 @@ export const CarritoView = ({ isOpen, onClose }: CarritoViewProps) => {
       // Usamos Promise.all para que todas las peticiones se ejecuten en paralelo
       await Promise.all(
         Carrito.map((item) =>
-          axios.put(`http://localhost:8000/productos/${item.id}/reducir-stock?cantidad=${item.cantidad}`)
+          axios.put(`${BASE_URL}/productos/${item.id}/reducir-stock?cantidad=${item.cantidad}`)
         )
       );
 
