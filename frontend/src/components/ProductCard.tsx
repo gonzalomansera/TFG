@@ -1,46 +1,94 @@
 import { ShoppingCart, Trash2, Edit3 } from 'lucide-react'
 import type { Producto } from '../types/AppContextType';
 import { useCarrito } from '../context/CarritoContext';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   producto: Producto;
   isAdmin: boolean;
   onDelete: (id: number) => void;
-  onEdit: () => void; // 1. Añadimos la prop para editar
+  onEdit: () => void; 
 }
+
+import { useRef } from 'react';
+import gsap from 'gsap';
 
 export const ProductCard = ({ producto, isAdmin, onDelete, onEdit }: Props) => {
   const { addToCarrito } = useCarrito();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const { left, top, width, height } = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    const xPct = (x / width - 0.5) * 20; // max 10deg
+    const yPct = (y / height - 0.5) * -20; // max 10deg
+
+    gsap.to(cardRef.current, {
+      rotationY: xPct,
+      rotationX: yPct,
+      transformPerspective: 1000,
+      duration: 0.5,
+      ease: "power2.out"
+    });
+  };
+
+  const handleMouseLeave = () => {
+    if (!cardRef.current) return;
+    gsap.to(cardRef.current, {
+      rotationY: 0,
+      rotationX: 0,
+      duration: 0.8,
+      ease: "power3.out"
+    });
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      alert("Debes iniciar sesión para añadir productos al carrito.");
+      navigate('/login');
+      return;
+    }
+    addToCarrito(producto);
+  };
 
   return (
-    <div className="bg-[#141414] rounded-3xl overflow-hidden border border-white/5 hover:border-[#E08733]/40 transition-all group flex flex-col shadow-2xl h-full">
+    <div 
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="card rounded-3xl hover:border-[#E08733]/40 flex flex-col shadow-2xl h-full transition-colors duration-500"
+    >
       <div className="relative h-72 overflow-hidden bg-[#0a0a0a]">
-        <img 
-          src={producto.imagen_url} 
-          alt={producto.nombre} 
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+        <img
+          src={producto.imagen_url}
+          alt={producto.nombre}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        
+
         {isAdmin && (
-          <div className="absolute top-4 left-4 flex gap-2">
-            {/* Botón Borrar */}
-            <button 
+          <div className="absolute top-4 left-4 flex gap-2 z-10">
+            <button
               onClick={(e) => {
-                e.stopPropagation(); // Evita clics accidentales
+                e.stopPropagation(); 
                 onDelete(producto.id);
               }}
-              className="bg-red-500/80 p-2 rounded-full hover:bg-red-600 transition-colors text-white"
+              className="btn-icon bg-red-500/80 hover:bg-red-600 text-white"
             >
               <Trash2 size={14} />
             </button>
 
-            {/* 2. Botón Editar (Ahora con función onEdit) */}
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
               }}
-              className="bg-white/80 text-black p-2 rounded-full hover:bg-[#E08733] hover:text-white transition-colors"
+              className="btn-icon bg-white/80 text-black hover:bg-[#E08733] hover:text-white"
             >
               <Edit3 size={14} />
             </button>
@@ -54,15 +102,15 @@ export const ProductCard = ({ producto, isAdmin, onDelete, onEdit }: Props) => {
 
       <div className="p-6 flex flex-col flex-grow">
         <h3 className="text-sm font-bold tracking-widest uppercase mb-2">{producto.nombre}</h3>
-        <p className="text-gray-400 text-[10px] leading-relaxed line-clamp-2 mb-6 italic">
+        <p className="text-caption leading-relaxed line-clamp-2 mb-6 italic text-gray-400">
           {producto.descripcion}
         </p>
-        
-        <button 
-          onClick={() => addToCarrito(producto)} 
-          className="mt-auto w-full border border-[#E08733] text-[#E08733] py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#E08733] hover:text-black transition-all flex items-center justify-center gap-2"
+
+        <button
+          onClick={(e) => handleAddToCart(e)}
+          className={`mt-auto w-full border border-[#E08733] text-[#E08733] py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${!user ? 'opacity-50' : 'hover:bg-[#E08733] hover:text-black'}`}
         >
-          <ShoppingCart size={14} /> Añadir al carrito
+          <ShoppingCart size={14} /> {user ? 'Añadir al carrito' : 'Identifícate para comprar'}
         </button>
       </div>
     </div>

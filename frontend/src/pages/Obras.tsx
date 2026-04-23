@@ -1,69 +1,36 @@
-import { useState, useEffect, type FormEvent } from 'react';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Trash2, X, Edit3 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { ArtCard } from '../components/ArtCard';
+import type { Obra } from '../types/AppContextType';
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-interface Obra {
-  id: number;
-  titulo: string;
-  descripcion: string;
-  tipo: string;
-  imagen_url: string;
-}
-
 export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
+  const { token } = useAuth();
   const [obras, setObras] = useState<Obra[]>([]);
-  const [obraSeleccionada, setObraSeleccionada] = useState<Obra | null>(null);
+  const [filtro, setFiltro] = useState('Todos');
   const [mostrarForm, setMostrarForm] = useState(false);
   const [idEnEdicion, setIdEnEdicion] = useState<number | null>(null);
+  const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
 
-  // --- CATEGORÍAS EXCLUSIVAS ---
-  const categorias = ['Imaginería', 'Dibujo', 'Tatuaje'];
-  const [filtroActivo, setFiltroActivo] = useState('Imaginería'); // Empieza en Imaginería por defecto
-
+  // Estados Formulario
   const [titulo, setTitulo] = useState('');
-  const [tipo, setTipo] = useState('Imaginería');
   const [desc, setDesc] = useState('');
+  const [tipo, setTipo] = useState('Imaginería');
   const [archivo, setArchivo] = useState<File | null>(null);
 
   const fetchObras = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/obras/`);
-      if (res.ok) {
-        const data = await res.json();
-        setObras(data);
-      } else {
-        console.error("Fetch failed:", res.statusText);
-      }
-    } catch (error) {
-      console.error("Error cargando obras:", error);
-    }
+    const headers: any = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    
+    const res = await fetch(`${BASE_URL}/obras/`, { headers });
+    if (res.ok) setObras(await res.json());
   };
 
-  useEffect(() => { fetchObras(); }, []);
+  useEffect(() => { fetchObras(); }, [token]);
 
-  // Filtrado: Ahora siempre filtra por uno de los tres tipos
-  const obrasFiltradas = obras.filter(obra => obra.tipo === filtroActivo);
-
-  const abrirEdicion = (obra: Obra) => {
-    setIdEnEdicion(obra.id);
-    setTitulo(obra.titulo);
-    setTipo(obra.tipo);
-    setDesc(obra.descripcion);
-    setArchivo(null);
-    setMostrarForm(true);
-  };
-
-  const abrirNuevoForm = () => {
-    setIdEnEdicion(null);
-    setTitulo('');
-    setTipo(filtroActivo); // Por defecto la categoría en la que estás
-    setDesc('');
-    setArchivo(null);
-    setMostrarForm(true);
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append('titulo', titulo);
@@ -72,125 +39,134 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
     if (archivo) formData.append('imagen', archivo);
 
     const url = idEnEdicion ? `${BASE_URL}/obras/${idEnEdicion}` : `${BASE_URL}/obras/`;
-    const metodo = idEnEdicion ? 'PUT' : 'POST';
+    const method = idEnEdicion ? 'PUT' : 'POST';
 
-    try {
-      const response = await fetch(url, { method: metodo, body: formData });
-      if (response.ok) {
-        setMostrarForm(false);
-        fetchObras();
-      }
-    } catch (error) {
-      console.error("Error:", error);
+    const res = await fetch(url, { 
+      method, 
+      body: formData,
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      setMostrarForm(false);
+      setIdEnEdicion(null);
+      fetchObras();
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("¿Eliminar obra?")) return;
-    const response = await fetch(`${BASE_URL}/obras/${id}`, { method: 'DELETE' });
-    if (response.ok) setObras(prev => prev.filter(o => o.id !== id));
+  const deleteObra = async (id: number) => {
+    if (!window.confirm("¿Borrar obra?")) return;
+    await fetch(`${BASE_URL}/obras/${id}`, { 
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    setObras(obras.filter(o => o.id !== id));
   };
 
+  const abrirEdicion = (o: Obra) => {
+    setIdEnEdicion(o.id);
+    setTitulo(o.titulo);
+    setDesc(o.descripcion);
+    setTipo(o.tipo);
+    setArchivo(null);
+    setMostrarForm(true);
+  };
+
+  const tipologias = ['Todos', 'Imaginería', 'Dibujo', 'Tatuaje'];
+  const filtradas = filtro === 'Todos' ? obras : obras.filter(o => o.tipo === filtro);
+
   return (
-    <section className="min-h-screen bg-[#2a2a2a] pt-12 pb-24 px-6">
-      <div className="max-w-7xl mx-auto mb-12 flex justify-between items-end">
-        <div>
-          <h2 className="text-3xl font-serif italic text-white mb-2">Portfolio</h2>
-          <div className="h-[2px] w-12 bg-[#E08733]"></div>
+    <section className="min-h-screen bg-[#0A0A0A] pt-40 pb-20 relative overflow-hidden">
+      {/* Noise Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+      
+      <div className="max-w-7xl mx-auto px-10">
+        
+        <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
+          <div className="space-y-4">
+            <span className="text-caption font-black text-[#E08733]">Archivo Visual</span>
+            <h2 className="text-6xl md:text-8xl font-serif italic text-white tracking-tighter leading-none">Galería de <br /> Obras</h2>
+          </div>
+
+          <div className="flex flex-wrap gap-8 items-center bg-white/5 backdrop-blur-3xl px-10 py-5 rounded-full border border-white/10">
+            {tipologias.map(t => (
+              <button
+                key={t}
+                onClick={() => setFiltro(t)}
+                className={`text-[10px] uppercase tracking-[0.4em] transition-all whitespace-nowrap font-black ${filtro === t ? 'text-[#E08733]' : 'text-gray-500 hover:text-white'}`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {isAdmin && (
+            <button
+              onClick={() => { setIdEnEdicion(null); setTitulo(''); setDesc(''); setTipo('Imaginería'); setArchivo(null); setMostrarForm(true); }}
+              className="bg-[#E08733] text-black px-10 py-5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-xl"
+            >
+              Nueva Obra
+            </button>
+          )}
         </div>
-        {isAdmin && (
-          <button onClick={abrirNuevoForm} className="bg-white text-black px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-[#E08733] transition-all flex items-center gap-2">
-            <Plus size={14} /> Añadir a {filtroActivo}
-          </button>
-        )}
-      </div>
 
-      {/* SELECTOR DE TRES APARTADOS */}
-      <div className="max-w-7xl mx-auto mb-16 border-b border-white/5 flex justify-center gap-12">
-        {categorias.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setFiltroActivo(cat)}
-            className={`pb-4 text-[11px] uppercase tracking-[0.4em] transition-all relative ${filtroActivo === cat ? 'text-[#E08733] font-bold' : 'text-gray-500 hover:text-white'
-              }`}
-          >
-            {cat}
-            {filtroActivo === cat && (
-              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-[#E08733] animate-in fade-in slide-in-from-left-2"></div>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* GRILLA DINÁMICA */}
-      <div className="max-w-7xl mx-auto columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
-        {obrasFiltradas.length > 0 ? (
-          obrasFiltradas.map((obra) => (
-            <div key={obra.id} className="relative group break-inside-avoid rounded-sm overflow-hidden bg-[#1a1a1a]">
-              <img
-                src={obra.imagen_url}
-                className="w-full grayscale hover:grayscale-0 transition-all duration-700 cursor-crosshair"
-                onClick={() => setObraSeleccionada(obra)}
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+          {filtradas.map((obra) => (
+            <div key={obra.id} className="space-y-4 cursor-pointer" onClick={() => setSelectedObra(obra)}>
+              <ArtCard obra={obra} onLikeToggle={fetchObras} />
               {isAdmin && (
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => abrirEdicion(obra)} className="p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-full hover:bg-white hover:text-black transition-all">
-                    <Edit2 size={12} />
-                  </button>
-                  <button onClick={() => handleDelete(obra.id)} className="p-2 bg-black/50 backdrop-blur-md border border-white/10 rounded-full hover:bg-red-600 transition-all">
-                    <Trash2 size={12} />
-                  </button>
+                <div className="flex gap-6 border-t border-white/10 pt-6 px-4">
+                  <button onClick={(e) => { e.stopPropagation(); deleteObra(obra.id); }} className="text-red-500/70 hover:text-red-400 transition-colors flex items-center gap-2 text-[9px] uppercase font-black tracking-widest"><Trash2 size={12}/> Borrar</button>
+                  <button onClick={(e) => { e.stopPropagation(); abrirEdicion(obra); }} className="text-white/60 hover:text-white transition-colors flex items-center gap-2 text-[9px] uppercase font-black tracking-widest"><Edit3 size={12}/> Editar</button>
                 </div>
               )}
-              <div className="p-4 border-t border-white/5">
-                <h3 className="text-[10px] uppercase tracking-widest font-bold">{obra.titulo}</h3>
-              </div>
             </div>
-          ))
-        ) : (
-          <div className="col-span-full py-20 text-center text-gray-600 uppercase text-[10px] tracking-[0.5em]">
-            No hay registros en {filtroActivo}
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
-      {/* MODAL FORMULARIO */}
       {mostrarForm && (
-        <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-6 backdrop-blur-sm">
-          <div className="bg-[#111] p-10 w-full max-w-md rounded-lg border border-white/5">
-            <h3 className="text-white text-xs font-bold uppercase tracking-widest mb-8 border-b border-[#E08733] pb-2 inline-block">
-              Gestionar {tipo}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <input type="text" placeholder="Título de la obra" className="w-full bg-transparent border-b border-white/10 py-2 outline-none focus:border-[#E08733] text-xs uppercase" value={titulo} onChange={e => setTitulo(e.target.value)} required />
-
-              <select className="w-full bg-[#1a1a1a] border border-white/10 p-3 outline-none text-xs uppercase text-gray-400" value={tipo} onChange={e => setTipo(e.target.value)}>
-                {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+        <div className="modal-overlay z-[150]">
+          <div className="modal-content max-w-2xl bg-[#111] border-white/10 p-12">
+            <button onClick={() => setMostrarForm(false)} className="absolute top-8 right-8 text-gray-500 hover:text-white"><X size={30}/></button>
+            <h3 className="heading-1 text-2xl mb-12">{idEnEdicion ? 'Editar Obra' : 'Nueva Obra'}</h3>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <input type="text" placeholder="TÍTULO DE LA OBRA" className="input-field" value={titulo} onChange={e => setTitulo(e.target.value)} required />
+              <select className="input-field border-b" value={tipo} onChange={e => setTipo(e.target.value)}>
+                <option value="Imaginería">Imaginería</option>
+                <option value="Dibujo">Dibujo</option>
+                <option value="Tatuaje">Tatuaje</option>
               </select>
-
-              <textarea placeholder="Descripción..." className="w-full bg-transparent border-b border-white/10 py-2 outline-none focus:border-[#E08733] text-xs h-20 resize-none" value={desc} onChange={e => setDesc(e.target.value)} />
-
-              <input type="file" className="text-[10px] text-gray-500" onChange={(e) => setArchivo(e.target.files?.[0] || null)} required={!idEnEdicion} />
-
-              <button type="submit" className="w-full bg-white text-black py-4 font-bold uppercase text-[10px] tracking-widest hover:bg-[#E08733] transition-all">
-                {idEnEdicion ? 'Actualizar Obra' : 'Publicar Obra'}
-              </button>
-              <button type="button" onClick={() => setMostrarForm(false)} className="w-full text-gray-500 text-[9px] uppercase tracking-widest pt-2">Cancelar</button>
+              <textarea placeholder="DESCRIPCIÓN Y DETALLES" className="textarea-field h-32" value={desc} onChange={e => setDesc(e.target.value)} required />
+              <div className="flex flex-col gap-2">
+                <input type="file" className="text-[10px] text-gray-500" onChange={(e) => setArchivo(e.target.files?.[0] || null)} required={!idEnEdicion} />
+              </div>
+              <button className="w-full btn btn-primary py-6 text-xs">{idEnEdicion ? 'Guardar Cambios' : 'Publicar Obra'}</button>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL DETALLE */}
-      {obraSeleccionada && (
-        <div className="fixed inset-0 z-[150] bg-black/98 flex items-center justify-center p-4 md:p-12" onClick={() => setObraSeleccionada(null)}>
-          <div className="relative max-w-6xl w-full flex flex-col md:flex-row gap-12" onClick={e => e.stopPropagation()}>
-            <img src={obraSeleccionada.imagen_url} className="max-h-[70vh] object-contain shadow-2xl" />
-            <div className="flex flex-col justify-center space-y-6 max-w-sm">
-              <span className="text-[#E08733] text-[10px] font-bold uppercase tracking-[0.5em]">{obraSeleccionada.tipo}</span>
-              <h3 className="text-4xl font-serif italic text-white">{obraSeleccionada.titulo}</h3>
-              <p className="text-gray-400 text-xs leading-relaxed font-light">{obraSeleccionada.descripcion}</p>
-              <button onClick={() => setObraSeleccionada(null)} className="text-white/30 hover:text-white text-[10px] uppercase tracking-widest text-left pt-8">← Cerrar detalle</button>
+      {selectedObra && (
+        <div className="modal-overlay z-[100]" onClick={() => setSelectedObra(null)}>
+          <div className="modal-content max-w-7xl h-[85vh] p-0 overflow-hidden bg-[#0D0D0D] border-white/5 flex flex-col lg:flex-row" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setSelectedObra(null)} className="absolute top-8 right-8 z-10 text-white/50 hover:text-white transition-colors">
+              <X size={32} strokeWidth={1} />
+            </button>
+            
+            <div className="lg:w-[60%] h-[500px] lg:h-full overflow-hidden">
+              <img src={selectedObra.imagen_url} alt={selectedObra.titulo} className="w-full h-full object-cover" />
+            </div>
+            <div className="lg:w-[40%] p-12 lg:p-20 flex flex-col justify-center bg-[#111] overflow-y-auto">
+              <span className="text-[#E08733] text-[10px] uppercase tracking-[0.4em] font-black mb-4">{selectedObra.tipo}</span>
+              <h2 className="text-4xl lg:text-6xl font-serif italic text-white leading-tight mb-8">{selectedObra.titulo}</h2>
+              <div className="h-[1px] w-12 bg-[#E08733] mb-8"></div>
+              <p className="text-gray-400 text-sm md:text-base font-light leading-relaxed mb-10">{selectedObra.descripcion}</p>
+              
+              <div className="flex items-center gap-4 text-white/40 text-[9px] uppercase tracking-widest font-black pt-8 border-t border-white/5">
+                 <span>Archivado en Galería</span>
+                 <span className="w-1 h-1 bg-white/20 rounded-full"></span>
+                 <span>Halconero Studio</span>
+              </div>
             </div>
           </div>
         </div>

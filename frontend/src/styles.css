@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+@layer utilities {
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .page-container {
+        @apply min-h-screen bg-[#0A0A0A] pt-32 pb-24 px-6;
+    }
+
+    .section-container {
+        @apply max-w-7xl mx-auto mb-16 flex flex-col md:flex-row justify-between md:items-end gap-10 md:gap-0;
+    }
+
+    .grid-layout {
+        @apply max-w-7xl mx-auto columns-1 md:columns-2 lg:columns-3 gap-10 space-y-10;
+    }
+
+    .flex-center {
+        @apply flex items-center justify-center;
+    }
+
+    /* --- TIPOGRAFIA --- */
+    .heading-hero {
+        @apply text-6xl md:text-9xl font-serif italic font-extralight text-white/95 tracking-tighter;
+    }
+
+    .heading-1 {
+        @apply text-4xl md:text-5xl font-serif italic text-white mb-4;
+    }
+
+    .heading-2 {
+        @apply text-2xl font-bold tracking-[0.5em] uppercase text-white/80;
+    }
+
+    .text-body {
+        @apply text-gray-500 text-sm leading-relaxed font-light;
+    }
+
+    .hero-text-char {
+        opacity: 0;
+        will-change: transform, opacity;
+    }
+
+    .text-caption {
+        @apply text-[11px] uppercase tracking-[0.3em] font-bold text-[#E08733];
+    }
+
+    .link-nav {
+        @apply text-[11px] uppercase tracking-[0.25em] font-medium text-gray-500 hover:text-white transition-all;
+    }
+
+    /* --- BOTONES --- */
+    .btn {
+        @apply px-8 py-3 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] transition-all cursor-pointer;
+    }
+
+    .btn-primary {
+        @apply bg-[#E08733] text-black hover:bg-white hover:shadow-[0_0_20px_rgba(224,135,51,0.3)];
+    }
+
+    .btn-secondary {
+        @apply bg-transparent border border-white/20 text-white hover:bg-white hover:text-black hover:border-white;
+    }
+
+    .btn-icon {
+        @apply p-3 rounded-full transition-all flex items-center justify-center;
+    }
+
+    .btn-icon-glass {
+        @apply bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white hover:text-black;
+    }
+
+    /* --- INPUTS --- */
+    .input-field {
+        @apply w-full bg-white/5 border-b border-white/10 p-4 outline-none focus:border-[#E08733] text-xs uppercase text-white placeholder-gray-600 transition-all rounded-t-lg;
+    }
+
+    .select-field, select.input-field {
+        @apply w-full bg-[#111] border border-white/10 p-4 outline-none text-xs uppercase text-white focus:border-[#E08733] rounded-lg;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1em;
+    }
+
+    select option {
+        background-color: #111 !important;
+        color: white !important;
+        padding: 10px;
+    }
+
+    .textarea-field {
+        @apply w-full bg-white/5 border-b border-white/10 p-4 outline-none focus:border-[#E08733] text-xs h-32 resize-none text-white placeholder-gray-600 rounded-t-lg transition-all;
+    }
+
+    /* --- CARDS & CONTAINERS --- */
+    .card {
+        @apply bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-2xl overflow-hidden transition-all duration-500 hover:bg-white/[0.05] hover:border-[#E08733]/50;
+    }
+
+    .card-image {
+        @apply w-full h-full object-cover transition-all duration-1000;
+    }
+
+    .modal-overlay {
+        @apply fixed inset-0 bg-black/80 z-[200] flex items-center justify-center p-6 backdrop-blur-xl;
+    }
+
+    .modal-content {
+        @apply bg-[#0D0D0D] p-12 w-full rounded-[2.5rem] border border-white/10 relative shadow-2xl;
+    }
+
+    /* --- MENU/FILTERS --- */
+    .filter-btn {
+        @apply pb-6 text-[12px] uppercase tracking-[0.5em] transition-all relative text-gray-600 hover:text-white;
+    }
+
+    .filter-btn-active {
+        @apply text-[#E08733] font-black;
+    }
+
+    .separator {
+        @apply h-[1px] w-20 bg-[#E08733]/50;
+    }
+
+    /* --- NAVEGACION --- */
+    .navbar {
+        @apply fixed top-0 w-full z-40 bg-black/40 backdrop-blur-2xl border-b border-white/5;
+    }
+
+    .nav-container {
+        @apply max-w-7xl mx-auto px-10 h-28 flex justify-between items-center;
+    }
+
+    .nav-links-container {
+        @apply hidden md:flex gap-12 text-[11px] tracking-[0.3em] uppercase text-gray-500 items-center font-medium;
+    }
+
+    .nav-link {
+        @apply hover:text-[#E08733] transition-colors relative after:content-[''] after:absolute after:bottom-[-2px] after:left-0 after:w-0 after:h-[1px] after:bg-[#E08733] after:transition-all hover:after:w-full;
+    }
+
+    /* --- FOOTER --- */
+    .footer {
+        @apply bg-black text-white py-24 border-t border-white/5;
+    }
+
+    .footer-column-title {
+        @apply text-[#E08733] text-[11px] font-black uppercase tracking-[0.4em] mb-6 block;
+    }
+
+    .footer-link {
+        @apply text-gray-500 hover:text-[#E08733] transition-colors w-fit text-xs font-light;
+    }
+
+    /* ---TRAYECTORIA--- */
+    .timeline-dot {
+        @apply absolute -left-[41px] top-1 w-4 h-4 rounded-full bg-black border-2 border-[#E08733] group-hover:scale-125 transition-all duration-500;
+    }
+
+    .timeline-date {
+        @apply text-[#E08733] font-serif italic text-lg tracking-tight opacity-40;
+    }
+
+    /* --- CART & MODALES --- */
+    .cart-item-image {
+        @apply w-24 h-24 bg-white/5 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0;
+    }
+
+    .cart-quantity-btn {
+        @apply p-2 px-4 hover:bg-white/10 transition-colors rounded-lg;
+    }
+
+    .payment-method-btn {
+        @apply w-full flex items-center gap-6 p-6 rounded-3xl border border-white/10 transition-all hover:bg-white/5;
+    }
+
+    /* --- GLOBAL LAYOUT --- */
+    .app-container {
+        @apply min-h-screen bg-[#0A0A0A] text-white font-light selection:bg-[#E08733]/30;
+    }
+
+    .main-content {
+        @apply pt-0;
+    }
+
+    /* --- SCROLL ANIMACIONES --- */
+    .animate-on-scroll {
+        @apply opacity-0 translate-y-12 transition-all duration-1000 ease-[cubic-bezier(0.2,0.8,0.2,1)];
+    }
+
+    .is-visible {
+        @apply opacity-100 translate-y-0 underline decoration-[#E08733]/30;
+    }
+
+    /* --- ANIMACIONES PAGINAS GLOBALES --- */
+    @keyframes smokeIn {
+        0% {
+            opacity: 0;
+            filter: blur(20px);
+            transform: translateY(40px) scale(0.98);
+        }
+
+        100% {
+            opacity: 1;
+            filter: blur(0);
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .animate-smoke-in {
+        animation: smokeIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+}
