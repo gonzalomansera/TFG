@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 
+import { useApi } from '../hooks/useApi';
+
 export const Register = () => {
+  const { request } = useApi();
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -20,20 +23,16 @@ export const Register = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      await request('/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-      const data = await res.json();
-      if (res.ok) {
-        alert('Registro completado con éxito. Ya puedes iniciar sesión.');
-        navigate('/login');
-      } else {
-        setError(data.detail || 'Error en el registro');
-      }
-    } catch (e) {
-      setError('Error de conexión con el servidor');
+      alert('Registro completado con éxito. Ya puedes iniciar sesión.');
+      navigate('/login');
+    } catch (err) {
+      const e = err as Error;
+      setError(e.message || 'Error en el registro');
     }
   };
 

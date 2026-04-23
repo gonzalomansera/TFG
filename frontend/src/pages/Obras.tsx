@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Trash2, X, Edit3 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useApi } from '../hooks/useApi';
 import { ArtCard } from '../components/ArtCard';
-import type { Obra } from '../types/AppContextType';
-
-const BASE_URL = import.meta.env.VITE_API_URL;
+import { type Obra } from '../types/AppContextType';
+import { getImageUrl } from '../utils/imageHelper';
 
 export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
-  const { token } = useAuth();
+  const { request, loading } = useApi();
   const [obras, setObras] = useState<Obra[]>([]);
   const [filtro, setFiltro] = useState('Todos');
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -21,14 +20,15 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
   const [archivo, setArchivo] = useState<File | null>(null);
 
   const fetchObras = async () => {
-    const headers: any = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    
-    const res = await fetch(`${BASE_URL}/obras/`, { headers });
-    if (res.ok) setObras(await res.json());
+    try {
+      const data = await request<Obra[]>('/obras/');
+      if (data) setObras(data);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  useEffect(() => { fetchObras(); }, [token]);
+  useEffect(() => { fetchObras(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,28 +38,27 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
     formData.append('tipo', tipo);
     if (archivo) formData.append('imagen', archivo);
 
-    const url = idEnEdicion ? `${BASE_URL}/obras/${idEnEdicion}` : `${BASE_URL}/obras/`;
+    const url = idEnEdicion ? `/obras/${idEnEdicion}` : `/obras/`;
     const method = idEnEdicion ? 'PUT' : 'POST';
 
-    const res = await fetch(url, { 
-      method, 
-      body: formData,
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
+    try {
+      await request(url, { method, body: formData });
       setMostrarForm(false);
       setIdEnEdicion(null);
       fetchObras();
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const deleteObra = async (id: number) => {
     if (!window.confirm("¿Borrar obra?")) return;
-    await fetch(`${BASE_URL}/obras/${id}`, { 
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    setObras(obras.filter(o => o.id !== id));
+    try {
+      await request(`/obras/${id}`, { method: 'DELETE' });
+      setObras(obras.filter(o => o.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const abrirEdicion = (o: Obra) => {
@@ -154,7 +153,7 @@ export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
             </button>
             
             <div className="lg:w-[60%] h-[500px] lg:h-full overflow-hidden">
-              <img src={selectedObra.imagen_url} alt={selectedObra.titulo} className="w-full h-full object-cover" />
+              <img src={getImageUrl(selectedObra.imagen_url)} alt={selectedObra.titulo} className="w-full h-full object-cover" decoding="async" loading="lazy" />
             </div>
             <div className="lg:w-[40%] p-12 lg:p-20 flex flex-col justify-center bg-[#111] overflow-y-auto">
               <span className="text-[#E08733] text-[10px] uppercase tracking-[0.4em] font-black mb-4">{selectedObra.tipo}</span>

@@ -5,16 +5,20 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 import { useAuth } from '../context/AuthContext';
+import { useApi } from '../hooks/useApi';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+import type { Obra, Producto, Resena } from '../types/AppContextType';
+
+import { getImageUrl } from '../utils/imageHelper';
 
 export const Home = () => {
-  const { user, token } = useAuth();
-  const [ultimaObra, setUltimaObra] = useState<any>(null);
-  const [productos, setProductos] = useState<any[]>([]);
-  const [resenas, setResenas] = useState<any[]>([]);
+  const { request, loading } = useApi();
+  const { user } = useAuth();
+  const [ultimaObra, setUltimaObra] = useState<Obra | null>(null);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [resenas, setResenas] = useState<Resena[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Estados para nueva reseña
@@ -23,17 +27,14 @@ export const Home = () => {
 
   const fetchData = async () => {
     try {
-      const resObras = await fetch(`${BASE_URL}/obras/`);
-      const obrasData = await resObras.json();
-      if (obrasData.length > 0) setUltimaObra(obrasData[obrasData.length - 1]);
+      const obrasData = await request<Obra[]>('/obras/');
+      if (obrasData && obrasData.length > 0) setUltimaObra(obrasData[obrasData.length - 1]);
 
-      const resProd = await fetch(`${BASE_URL}/productos/`);
-      const prodData = await resProd.json();
-      setProductos(prodData.slice(0, 4));
+      const prodData = await request<Producto[]>('/productos/');
+      if (prodData) setProductos(prodData.slice(0, 4));
 
-      const resResenas = await fetch(`${BASE_URL}/resenas/`);
-      const resenasData = await resResenas.json();
-      setResenas(resenasData.slice(0, 3));
+      const resenasData = await request<Resena[]>('/resenas/');
+      if (resenasData) setResenas(resenasData.slice(0, 3));
     } catch (e) {
       console.error("Error cargando datos:", e);
     }
@@ -48,23 +49,18 @@ export const Home = () => {
     if (!user || !nuevoComentarioResena.trim()) return;
 
     try {
-      const res = await fetch(`${BASE_URL}/resenas/`, {
+      await request('/resenas/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           estrellas: nuevaEstrellas,
           comentario: nuevoComentarioResena
         })
       });
-      if (res.ok) {
-        setNuevoComentarioResena('');
-        setNuevaEstrellas(5);
-        fetchData();
-        alert("¡Gracias por tu valoración!");
-      }
+      setNuevoComentarioResena('');
+      setNuevaEstrellas(5);
+      fetchData();
+      alert("¡Gracias por tu valoración!");
     } catch (e) {
       console.error("Error enviando reseña:", e);
     }
@@ -73,13 +69,8 @@ export const Home = () => {
   const eliminarResena = async (id: number) => {
     if (!window.confirm("¿Deseas eliminar esta reseña?")) return;
     try {
-      const res = await fetch(`${BASE_URL}/resenas/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        fetchData();
-      }
+      await request(`/resenas/${id}`, { method: 'DELETE' });
+      fetchData();
     } catch (e) {
       console.error("Error eliminando reseña:", e);
     }
@@ -108,13 +99,16 @@ export const Home = () => {
 
     // 2. MAGNETIC BUTTONS (SUBTLE)
     const magneticBtns = document.querySelectorAll('.btn-magnetic');
-    magneticBtns.forEach((btn: any) => {
-      btn.addEventListener('mousemove', (e: MouseEvent) => {
+    magneticBtns.forEach((el) => {
+      const btn = el as HTMLElement;
+      const moveBtn = (e: MouseEvent) => {
         const { left, top, width, height } = btn.getBoundingClientRect();
         const x = e.clientX - left - width / 2;
         const y = e.clientY - top - height / 2;
         gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.6, ease: "power2.out" });
-      });
+      };
+
+      btn.addEventListener('mousemove', moveBtn);
       btn.addEventListener('mouseleave', () => {
         gsap.to(btn, { x: 0, y: 0, duration: 0.8, ease: "elastic.out(1, 0.3)" });
       });
@@ -218,8 +212,10 @@ export const Home = () => {
             <div className="absolute -inset-4 border border-[#E08733]/5 translate-x-8 translate-y-8 -z-10 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-1000 border-dashed"></div>
             <div className="overflow-hidden rounded-[2.5rem] h-[550px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
               <img
-                src={ultimaObra?.imagen_url || "https://images.unsplash.com/photo-1554188248-986adbb73be4?q=80&w=2070&auto=format&fit=crop"}
-                className="card-image w-full h-full object-cover parallax-img scale-110"
+                src={getImageUrl(ultimaObra?.imagen_url) || "https://images.unsplash.com/photo-1554188248-986adbb73be4?q=80&w=2070&auto=format&fit=crop"}
+                className="card-image w-full h-full object-cover parallax-img scale-110 will-change-transform"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           </div>
@@ -261,7 +257,7 @@ export const Home = () => {
             {productos.length > 0 ? (
               <>
                 <div className="md:col-span-2 md:row-span-2 stagger-grid-item group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 aspect-[4/5] md:aspect-auto">
-                  <img src={productos[0]?.imagen_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100" />
+                  <img src={getImageUrl(productos[0]?.imagen_url)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100 will-change-transform" loading="lazy" decoding="async" />
                   <div className="absolute inset-x-8 bottom-8 p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
                      <p className="text-[#E08733] text-[9px] uppercase font-black mb-2">Destacado</p>
                      <h4 className="text-xl font-bold uppercase tracking-widest">{productos[0]?.nombre}</h4>
@@ -269,18 +265,18 @@ export const Home = () => {
                 </div>
                 {productos.length > 1 && (
                   <div className="md:col-span-1 md:row-span-1 stagger-grid-item group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 aspect-[4/5] md:aspect-auto">
-                    <img src={productos[1]?.imagen_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100" />
+                    <img src={getImageUrl(productos[1]?.imagen_url)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100 will-change-transform" loading="lazy" decoding="async" />
                   </div>
                 )}
                 {productos.length > 2 && (
                   <div className="md:col-span-1 md:row-span-2 stagger-grid-item group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 aspect-[4/5] md:aspect-auto">
-                    <img src={productos[2]?.imagen_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100" />
+                    <img src={getImageUrl(productos[2]?.imagen_url)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100 will-change-transform" loading="lazy" decoding="async" />
                      <div className="absolute inset-0 bg-gradient-to-t from-[#E08733]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </div>
                 )}
                 {productos.length > 3 && (
                   <div className="md:col-span-1 md:row-span-1 stagger-grid-item group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 aspect-[4/5] md:aspect-auto">
-                    <img src={productos[3]?.imagen_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100" />
+                    <img src={getImageUrl(productos[3]?.imagen_url)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100 will-change-transform" loading="lazy" decoding="async" />
                   </div>
                 )}
               </>

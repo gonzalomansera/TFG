@@ -1,8 +1,10 @@
+import { useRef, useState } from 'react';
 import { ShoppingCart, Trash2, Edit3 } from 'lucide-react'
 import type { Producto } from '../types/AppContextType';
 import { useCarrito } from '../context/CarritoContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTilt } from '../hooks/useTilt';
 
 interface Props {
   producto: Producto;
@@ -11,41 +13,13 @@ interface Props {
   onEdit: () => void; 
 }
 
-import { useRef } from 'react';
-import gsap from 'gsap';
+import { getImageUrl } from '../utils/imageHelper';
 
 export const ProductCard = ({ producto, isAdmin, onDelete, onEdit }: Props) => {
   const { addToCarrito } = useCarrito();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - left;
-    const y = e.clientY - top;
-    const xPct = (x / width - 0.5) * 20; // max 10deg
-    const yPct = (y / height - 0.5) * -20; // max 10deg
-
-    gsap.to(cardRef.current, {
-      rotationY: xPct,
-      rotationX: yPct,
-      transformPerspective: 1000,
-      duration: 0.5,
-      ease: "power2.out"
-    });
-  };
-
-  const handleMouseLeave = () => {
-    if (!cardRef.current) return;
-    gsap.to(cardRef.current, {
-      rotationY: 0,
-      rotationX: 0,
-      duration: 0.8,
-      ease: "power3.out"
-    });
-  };
+  const { ref: cardRef, handleMouseMove, handleMouseLeave } = useTilt(20);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -66,7 +40,7 @@ export const ProductCard = ({ producto, isAdmin, onDelete, onEdit }: Props) => {
     >
       <div className="relative h-72 overflow-hidden bg-[#0a0a0a]">
         <img
-          src={producto.imagen_url}
+          src={getImageUrl(producto.imagen_url)}
           alt={producto.nombre}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />

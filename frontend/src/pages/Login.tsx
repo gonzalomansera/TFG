@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useApi } from '../hooks/useApi';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { request } = useApi();
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -14,25 +16,23 @@ export const Login = () => {
     e.preventDefault();
     setError('');
     try {
-      // Usamos x-www-form-urlencoded para el Login de OAuth2PasswordRequestForm
       const formData = new URLSearchParams();
-      formData.append('username', email); // FastAPI usa 'username'
+      formData.append('username', email);
       formData.append('password', password);
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      const data = await request<{ access_token: string, is_admin: boolean }>('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
       });
-      const data = await res.json();
-      if (res.ok) {
+      
+      if (data) {
         login(data.access_token, data.is_admin);
         navigate('/');
-      } else {
-        setError(data.detail || 'Credenciales inválidas');
       }
-    } catch (e) {
-      setError('Error de conexión con el servidor');
+    } catch (err) {
+      const e = err as Error;
+      setError(e.message || 'Error de conexión');
     }
   };
 

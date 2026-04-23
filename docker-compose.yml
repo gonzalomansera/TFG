@@ -1,5 +1,4 @@
 services:
-  # El servidor de la base de datos
   db-tfg:
     image: postgres:15
     container_name: contenedor_postgres
@@ -10,7 +9,6 @@ services:
     ports:
       - "5432:5432"
 
-  # Una herramienta web para ver las tablas (como phpMyAdmin pero para Postgres)
   adminer-tfg:
     image: adminer
     container_name: contenedor_adminer

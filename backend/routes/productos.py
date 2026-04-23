@@ -3,12 +3,10 @@ from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 import models, auth_utils
-from dotenv import load_dotenv
+from cloudinary_utils import upload_to_cloudinary, delete_from_cloudinary
+from image_utils import process_image
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
-# Variables de entorno 
-load_dotenv()
-BASE_URL = os.getenv("API_URL", "http://localhost:8000")
 
 @router.get("/")
 def obtener_productos(db: Session = Depends(get_db)):
@@ -27,14 +25,14 @@ async def crear_producto(
     if current_user.is_admin != 1:
         raise HTTPException(status_code=403, detail="No tienes permisos para realizar esta acción")
 
-    # Sanitizar el nombre del archivo para evitar problemas con espacios o caracteres especiales
-    nombre_seguro = "".join([c if c.isalnum() or c in ".-" else "_" for c in imagen.filename])
-    ruta_archivo = f"uploads/{nombre_seguro}"
+    # Optimizar imagen en memoria
+    contenido_optimizado, _ = process_image(await imagen.read(), imagen.filename)
     
-    with open(ruta_archivo, "wb") as buffer:
-        buffer.write(await imagen.read())
+    # Subir a Cloudinary
+    url_imagen = upload_to_cloudinary(contenido_optimizado, folder="halconero/productos")
     
-    url_imagen = f"{BASE_URL}/uploads/{nombre_seguro}"
+    if not url_imagen:
+        raise HTTPException(status_code=500, detail="Error al subir la imagen del producto")
     
     nuevo_producto = models.Producto(
         nombre=nombre, descripcion=descripcion, precio=precio,
@@ -47,7 +45,6 @@ async def crear_producto(
 
 @router.put("/{producto_id}/reducir-stock")
 def reducir_stock(producto_id: int, cantidad: int, db: Session = Depends(get_db)):
-    # Nota: Este endpoint podría ser llamado por el sistema de pagos o el carrito
     producto = db.query(models.Producto).filter(models.Producto.id == producto_id).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -82,20 +79,15 @@ async def actualizar_producto(
     producto.stock = stock
 
     if imagen:
-        # Borrar imagen antigua si existe
-        try:
-            ruta_antigua = producto.imagen_url.replace(BASE_URL, "").lstrip("/")
-            if os.path.exists(ruta_antigua):
-                os.remove(ruta_antigua)
-        except Exception as e:
-            print(f"Error borrando imagen antigua: {e}")
+        # Borrar imagen antigua de Cloudinary
+        if producto.imagen_url:
+            delete_from_cloudinary(producto.imagen_url)
 
-        # Guardar nueva imagen
-        nombre_seguro = "".join([c if c.isalnum() or c in ".-" else "_" for c in imagen.filename])
-        ruta_archivo = f"uploads/{nombre_seguro}"
-        with open(ruta_archivo, "wb") as buffer:
-            buffer.write(await imagen.read())
-        producto.imagen_url = f"{BASE_URL}/uploads/{nombre_seguro}"
+        # Optimizar y subir nueva
+        contenido_optimizado, _ = process_image(await imagen.read(), imagen.filename)
+        nueva_url = upload_to_cloudinary(contenido_optimizado, folder="halconero/productos")
+        if nueva_url:
+            producto.imagen_url = nueva_url
 
     db.commit()
     db.refresh(producto)
@@ -110,12 +102,8 @@ def eliminar_producto(id: int, db: Session = Depends(get_db), current_user: mode
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
-    try:
-        ruta_foto = producto.imagen_url.replace(BASE_URL, "")
-        if os.path.exists(ruta_foto):
-            os.remove(ruta_foto)
-    except Exception as e:
-        print(f"Error al borrar archivo físico: {e}")
+    if producto.imagen_url:
+        delete_from_cloudinary(producto.imagen_url)
 
     db.delete(producto)
     db.commit()

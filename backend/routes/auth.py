@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database import get_db
 import models, auth_utils
 from pydantic import BaseModel
+from cloudinary_utils import upload_to_cloudinary, delete_from_cloudinary
+from image_utils import process_image
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -32,7 +34,6 @@ def register(user: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # El OAuth2PasswordRequestForm usa el campo 'username', que en nuestro caso es el email
     user = db.query(models.Usuario).filter(models.Usuario.email == form_data.username).first()
     if not user or not auth_utils.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -55,10 +56,6 @@ def get_me(current_user: models.Usuario = Depends(auth_utils.get_current_user)):
         "is_admin": current_user.is_admin == 1
     }
 
-from fastapi import File, UploadFile, Form
-import shutil
-import os
-
 @router.put("/me")
 async def update_me(
     nombre: str = Form(...),
@@ -71,10 +68,15 @@ async def update_me(
     current_user.telefono = telefono
     
     if foto:
-        file_path = f"uploads/perfil_{current_user.id}_{foto.filename}"
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(foto.file, buffer)
-        current_user.foto_perfil = f"/{file_path}"
+        # Borrar antigua si existe
+        if current_user.foto_perfil:
+            delete_from_cloudinary(current_user.foto_perfil)
+
+        # Optimizar y subir nueva
+        contenido_optimizado, _ = process_image(await foto.read(), foto.filename)
+        url_foto = upload_to_cloudinary(contenido_optimizado, folder="halconero/perfiles")
+        if url_foto:
+            current_user.foto_perfil = url_foto
         
     db.commit()
     return {"mensaje": "Perfil actualizado", "foto_perfil": current_user.foto_perfil}

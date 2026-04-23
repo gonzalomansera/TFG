@@ -1,61 +1,32 @@
-import { useRef, useState } from "react";
-import gsap from "gsap";
+import { useState } from "react";
 import type { Obra } from "../types/AppContextType";
 import { Heart } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useApi } from "../hooks/useApi";
+import { useTilt } from "../hooks/useTilt";
+import { getImageUrl } from "../utils/imageHelper";
 
 export const ArtCard = ({ obra, onLikeToggle }: { obra: Obra, onLikeToggle?: () => void }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const { user, token } = useAuth();
+  const { ref: cardRef, handleMouseMove, handleMouseLeave } = useTilt(15);
+  const { request } = useApi();
+  const { user } = useAuth();
   const [isLiking, setIsLiking] = useState(false);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!user || !token) {
+    if (!user) {
       alert("Debes iniciar sesión para dar me gusta");
       return;
     }
     setIsLiking(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/obras/${obra.id}/like`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok && onLikeToggle) {
-        onLikeToggle();
-      }
+      await request(`/obras/${obra.id}/like`, { method: 'POST' });
+      if (onLikeToggle) onLikeToggle();
     } catch (error) {
-      console.error("Error liking obra:", error);
+      console.error(error);
     } finally {
       setIsLiking(false);
     }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const { left, top, width, height } = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - left;
-    const y = e.clientY - top;
-    const xPct = (x / width - 0.5) * 15;
-    const yPct = (y / height - 0.5) * -15;
-
-    gsap.to(cardRef.current, {
-      rotationY: xPct,
-      rotationX: yPct,
-      transformPerspective: 1000,
-      duration: 0.6,
-      ease: "power2.out"
-    });
-  };
-
-  const handleMouseLeave = () => {
-    if (!cardRef.current) return;
-    gsap.to(cardRef.current, {
-      rotationY: 0,
-      rotationX: 0,
-      duration: 1,
-      ease: "power3.out"
-    });
   };
 
   return (
@@ -66,7 +37,13 @@ export const ArtCard = ({ obra, onLikeToggle }: { obra: Obra, onLikeToggle?: () 
       className="card bg-[#111] rounded-[2rem] hover:border-[#E08733]/30 transition-all duration-500 group relative"
     >
       <div className="relative overflow-hidden h-[400px]">
-        <img src={obra.imagen_url} alt={obra.titulo} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+        <img 
+          src={getImageUrl(obra.imagen_url)} 
+          alt={obra.titulo} 
+          className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 will-change-transform" 
+          loading="lazy"
+          decoding="async"
+        />
         
         <div className="absolute top-6 left-6 z-20">
           <button 

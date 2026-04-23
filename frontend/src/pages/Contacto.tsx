@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Send, MapPin, Instagram, Mail, Calendar, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-const BASE_URL = import.meta.env.VITE_API_URL;
-
+import { useApi } from '../hooks/useApi';
 
 export const Contacto = () => {
-  const { user, token } = useAuth();
+  const { request } = useApi();
+  const { user } = useAuth();
   const [enviado, setEnviado] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -28,27 +27,19 @@ export const Contacto = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${BASE_URL}/citas/`, {
+      await request('/citas/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idea: `[${formData.tipo}] - Propuesta: ${formData.idea}`,
           fecha_cita: formData.fechaPreferencia
         })
       });
-
-      if (response.ok) {
-        setEnviado(true);
-        setFormData({ nombre: user.nombre, email: user.email, telefono: user.telefono || '', tipo: 'Cita Tatuaje', idea: '' });
-      } else {
-        alert("Error al enviar la solicitud. Por favor, inténtalo de nuevo.");
-      }
+      setEnviado(true);
+      setFormData({ nombre: user.nombre, email: user.email, telefono: user.telefono || '', tipo: 'Cita Tatuaje', idea: '', fechaPreferencia: 'A convenir' });
     } catch (error) {
-      console.error("Error al enviar:", error);
-      alert("Hubo un error de conexión.");
+      console.error(error);
+      alert("Hubo un error al enviar la solicitud.");
     } finally {
       setLoading(false);
     }

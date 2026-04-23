@@ -1,13 +1,11 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Package, X, Plus } from 'lucide-react'
 import { ProductCard } from '../components/ProductCard'
-import type { Producto } from '../types/AppContextType'
-import { useAuth } from '../context/AuthContext'
-
-const BASE_URL = import.meta.env.VITE_API_URL;
+import { type Producto } from '../types/AppContextType'
+import { useApi } from '../hooks/useApi'
 
 export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
-  const { token } = useAuth();
+  const { request, loading } = useApi();
   const [productos, setProductos] = useState<Producto[]>([])
   const [mostrarForm, setMostrarForm] = useState(false)
   const [idEnEdicion, setIdEnEdicion] = useState<number | null>(null)
@@ -22,13 +20,10 @@ export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
 
   const fetchProductos = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/productos/`)
-      if (res.ok) {
-        const data = await res.json()
-        setProductos(data)
-      }
+      const data = await request<Producto[]>('/productos/');
+      if (data) setProductos(data);
     } catch (error) {
-      console.error("Error cargando productos:", error)
+      console.error(error);
     }
   }
 
@@ -59,40 +54,26 @@ export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
     formData.append('stock', stock)
     if (archivo) formData.append('imagen', archivo)
 
-    const url = idEnEdicion
-      ? `${BASE_URL}/productos/${idEnEdicion}`
-      : `${BASE_URL}/productos/`
-
+    const url = idEnEdicion ? `/productos/${idEnEdicion}` : `/productos/`
     const method = idEnEdicion ? 'PUT' : 'POST'
 
     try {
-      const response = await fetch(url, { 
-        method, 
-        body: formData,
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        setMostrarForm(false)
-        setIdEnEdicion(null)
-        fetchProductos()
-      }
+      await request(url, { method, body: formData });
+      setMostrarForm(false)
+      setIdEnEdicion(null)
+      fetchProductos()
     } catch (error) {
-      console.error("Error al guardar producto:", error)
+      console.error(error)
     }
   }
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("¿Deseas eliminar este producto de la tienda?")) return
     try {
-      const response = await fetch(`${BASE_URL}/productos/${id}`, { 
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        setProductos(prevProductos => prevProductos.filter(p => p.id !== id));
-      }
+      await request(`/productos/${id}`, { method: 'DELETE' });
+      setProductos(prevProductos => prevProductos.filter(p => p.id !== id));
     } catch (error) {
-      console.error("Error al eliminar producto:", error);
+      console.error(error);
     }
   }
 
@@ -172,7 +153,7 @@ export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
             </button>
             
             <div className="lg:w-1/2 h-[400px] lg:h-full overflow-hidden">
-              <img src={selectedProduct.imagen_url} alt={selectedProduct.nombre} className="w-full h-full object-cover" />
+              <img src={selectedProduct.imagen_url} alt={selectedProduct.nombre} className="w-full h-full object-cover" decoding="async" loading="lazy" />
             </div>
             <div className="lg:w-1/2 p-12 lg:p-20 flex flex-col justify-center overflow-y-auto">
               <span className="text-[#E08733] text-[10px] uppercase tracking-[0.4em] font-black mb-4">Pieza Exclusiva</span>

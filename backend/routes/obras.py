@@ -1,14 +1,11 @@
 import os
-import shutil
 from typing import Optional
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 import models, auth_utils
-from dotenv import load_dotenv
-load_dotenv()
-
-BASE_URL = os.getenv("API_URL", "http://localhost:8000")
+from cloudinary_utils import upload_to_cloudinary, delete_from_cloudinary
+from image_utils import process_image
 
 router = APIRouter(prefix="/obras", tags=["Obras"])
 
@@ -45,7 +42,7 @@ def toggle_like_obra(obra_id: int, db: Session = Depends(get_db), current_user: 
         return {"liked": True}
 
 @router.post("/")
-def crear_obra(
+async def crear_obra(
     titulo: str = Form(...), 
     descripcion: str = Form(...), 
     tipo: str = Form(...), 
@@ -56,14 +53,14 @@ def crear_obra(
     if current_user.is_admin != 1:
         raise HTTPException(status_code=403, detail="No tienes permisos")
 
-    # Sanitizar el nombre del archivo
-    nombre_seguro = "".join([c if c.isalnum() or c in ".-" else "_" for c in imagen.filename])
-    ruta_archivo = f"uploads/{nombre_seguro}"
+    # Optimizar imagen en memoria
+    contenido_optimizado, nuevo_nombre = process_image(await imagen.read(), imagen.filename)
     
-    with open(ruta_archivo, "wb") as buffer:
-        shutil.copyfileobj(imagen.file, buffer)
+    # Subir a Cloudinary
+    url_foto = upload_to_cloudinary(contenido_optimizado, folder="halconero/obras")
     
-    url_foto = f"{BASE_URL}/uploads/{nombre_seguro}"
+    if not url_foto:
+        raise HTTPException(status_code=500, detail="Error al subir la imagen a la nube")
     
     nueva_obra = models.Obra(
         titulo=titulo, 
@@ -86,19 +83,16 @@ def eliminar_obra(id: int, db: Session = Depends(get_db), current_user: models.U
     if not obra:
         raise HTTPException(status_code=404, detail="Obra no encontrada")
 
-    try:
-        ruta_foto = obra.imagen_url.replace(BASE_URL, "")
-        if os.path.exists(ruta_foto):
-            os.remove(ruta_foto)
-    except Exception as e:
-        print(f"No se pudo borrar el archivo físico: {e}")
+    # Borrar de Cloudinary si es una URL de la nube
+    if obra.imagen_url:
+        delete_from_cloudinary(obra.imagen_url)
 
     db.delete(obra)
     db.commit()
     return {"mensaje": "Obra eliminada correctamente"}
 
 @router.put("/{id}")
-def actualizar_obra(
+async def actualizar_obra(
     id: int,
     titulo: str = Form(...),
     descripcion: str = Form(...),
@@ -119,12 +113,15 @@ def actualizar_obra(
     obra.tipo = tipo
 
     if imagen:
-        # Sanitizar el nombre del archivo
-        nombre_seguro = "".join([c if c.isalnum() or c in ".-" else "_" for c in imagen.filename])
-        ruta_archivo = f"uploads/{nombre_seguro}"
-        with open(ruta_archivo, "wb") as buffer:
-            shutil.copyfileobj(imagen.file, buffer)
-        obra.imagen_url = f"{BASE_URL}/uploads/{nombre_seguro}"
+        # Borrar imagen antigua de Cloudinary
+        if obra.imagen_url:
+            delete_from_cloudinary(obra.imagen_url)
+            
+        # Optimizar y subir nueva
+        contenido_optimizado, _ = process_image(await imagen.read(), imagen.filename)
+        nueva_url = upload_to_cloudinary(contenido_optimizado, folder="halconero/obras")
+        if nueva_url:
+            obra.imagen_url = nueva_url
 
     db.commit()
     return {"mensaje": "Obra actualizada correctamente"}

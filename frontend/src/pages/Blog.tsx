@@ -2,35 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, X, Heart, MessageCircle, Send, Edit3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useApi } from '../hooks/useApi';
+import { type Post, type Comentario } from '../types/AppContextType';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const BASE_URL = import.meta.env.VITE_API_URL;
-
-interface Comentario {
-  id: number;
-  contenido: string;
-  fecha: string;
-  usuario: string;
-}
-
-interface Post {
-  id: number;
-  titulo: string;
-  contenido: string;
-  categoria: string;
-  imagen_url: string;
-  fecha: string;
-  likes_count: number;
-  comments_count: number;
-  is_liked: boolean;
-}
+import { getImageUrl } from '../utils/imageHelper';
 
 export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
-  const { user, token } = useAuth();
+  const { request } = useApi();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -48,26 +32,30 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fetchPosts = async () => {
-    const headers: any = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    
-    const res = await fetch(`${BASE_URL}/blog/`, { headers });
-    if (res.ok) {
-      const data = await res.json();
-      setPosts(data);
-      if (postExpandido) {
-        const updated = data.find((p: Post) => p.id === postExpandido.id);
-        if (updated) setPostExpandido(updated);
+    try {
+      const data = await request<Post[]>('/blog/');
+      if (data) {
+        setPosts(data);
+        if (postExpandido) {
+          const updated = data.find((p: Post) => p.id === postExpandido.id);
+          if (updated) setPostExpandido(updated);
+        }
       }
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const fetchComentarios = async (postId: number) => {
-    const res = await fetch(`${BASE_URL}/blog/${postId}/comments`);
-    if (res.ok) setComentarios(await res.json());
+    try {
+      const data = await request<Comentario[]>(`/blog/${postId}/comments`);
+      if (data) setComentarios(data);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  useEffect(() => { fetchPosts(); }, [token]);
+  useEffect(() => { fetchPosts(); }, []);
 
   useGSAP(() => {
     gsap.fromTo('.blog-header-reveal', 
@@ -102,22 +90,17 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
     formData.append('categoria', categoria);
     if (archivo) formData.append('imagen', archivo);
 
-    const url = idEnEdicion 
-      ? `${BASE_URL}/blog/${idEnEdicion}`
-      : `${BASE_URL}/blog/`
-    
+    const url = idEnEdicion ? `/blog/${idEnEdicion}` : `/blog/`
     const method = idEnEdicion ? 'PUT' : 'POST'
 
-    const res = await fetch(url, { 
-        method, 
-        body: formData,
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
+    try {
+      await request(url, { method, body: formData });
       setMostrarForm(false);
       setIdEnEdicion(null);
       fetchPosts();
       setTitulo(''); setContenido(''); setArchivo(null);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -134,11 +117,12 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
   const deletePost = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     if (!window.confirm("¿Borrar post?")) return;
-    await fetch(`${BASE_URL}/blog/${id}`, { 
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    setPosts(posts.filter(p => p.id !== id));
+    try {
+      await request(`/blog/${id}`, { method: 'DELETE' });
+      setPosts(posts.filter(p => p.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleLike = async (e: React.MouseEvent, id: number) => {
@@ -147,11 +131,12 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
         alert("Debes iniciar sesión para dar me gusta");
         return;
     }
-    const res = await fetch(`${BASE_URL}/blog/${id}/like`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) fetchPosts();
+    try {
+      await request(`/blog/${id}/like`, { method: 'POST' });
+      fetchPosts();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleExpandir = (post: Post) => {
@@ -163,35 +148,28 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
     e.preventDefault();
     if (!user || !postExpandido || !nuevoComentario.trim()) return;
 
-    const res = await fetch(`${BASE_URL}/blog/${postExpandido.id}/comentar`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ contenido: nuevoComentario })
-    });
-
-    if (res.ok) {
+    try {
+      await request(`/blog/${postExpandido.id}/comentar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contenido: nuevoComentario })
+      });
       setNuevoComentario('');
       fetchComentarios(postExpandido.id);
       fetchPosts(); 
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const eliminarComentario = async (id: number) => {
     if (!window.confirm("¿Deseas eliminar este comentario?")) return;
     try {
-      const res = await fetch(`${BASE_URL}/blog/comments/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        if (postExpandido) fetchComentarios(postExpandido.id);
-        fetchPosts(); 
-      }
+      await request(`/blog/comments/${id}`, { method: 'DELETE' });
+      if (postExpandido) fetchComentarios(postExpandido.id);
+      fetchPosts(); 
     } catch (e) {
-      console.error("Error eliminando comentario:", e);
+      console.error(e);
     }
   };
 
@@ -220,7 +198,7 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
             <article key={post.id} className="group cursor-pointer blog-post-card" onClick={() => handleExpandir(post)}>
               <div className="relative overflow-hidden mb-6 aspect-video">
                 <img
-                  src={post.imagen_url}
+                  src={getImageUrl(post.imagen_url)}
                   className="card-image group-hover:scale-110 transition-transform duration-1000"
                   alt={post.titulo}
                 />
@@ -283,7 +261,7 @@ export const Blog = ({ isAdmin }: { isAdmin: boolean }) => {
                 {/* Imagen y Texto (Lado Izquierdo) */}
                 <div className="w-full lg:w-[65%] overflow-y-auto no-scrollbar border-r border-white/5 outline-none bg-gradient-to-b from-transparent to-white/[0.02]">
                     <div className="relative">
-                      <img src={postExpandido.imagen_url} className="w-full aspect-[16/10] object-cover" />
+                      <img src={getImageUrl(postExpandido.imagen_url)} className="w-full aspect-[16/10] object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-60"></div>
                     </div>
                     <div className="p-10 md:p-14 space-y-8">

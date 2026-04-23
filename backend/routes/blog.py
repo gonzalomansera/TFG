@@ -1,16 +1,13 @@
+import os
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-import models, shutil, auth_utils
+import models, auth_utils
 from datetime import datetime
-import os
-from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List, Optional
-
-# Variables de entorno 
-load_dotenv()
-BASE_URL = os.getenv("API_URL", "http://localhost:8000")
+from cloudinary_utils import upload_to_cloudinary, delete_from_cloudinary
+from image_utils import process_image
 
 router = APIRouter(prefix="/blog", tags=["Blog"])
 
@@ -89,14 +86,15 @@ async def crear_post(
     if current_user.is_admin != 1:
         raise HTTPException(status_code=403, detail="No tienes permisos para realizar esta acción")
 
-    # Sanitizar el nombre del archivo
-    nombre_seguro = "".join([c if c.isalnum() or c in ".-" else "_" for c in imagen.filename])
-    ruta_archivo = f"uploads/{nombre_seguro}"
+    # Optimizar imagen en memoria
+    contenido_optimizado, _ = process_image(await imagen.read(), imagen.filename)
     
-    with open(ruta_archivo, "wb") as buffer:
-        buffer.write(await imagen.read())
+    # Subir a Cloudinary
+    url_imagen = upload_to_cloudinary(contenido_optimizado, folder="halconero/blog")
     
-    url_imagen = f"{BASE_URL}/uploads/{nombre_seguro}"
+    if not url_imagen:
+        raise HTTPException(status_code=500, detail="Error al subir la imagen del post")
+        
     fecha_actual = datetime.now().strftime("%d %b, %Y")
 
     nuevo_post = models.Post(
@@ -117,12 +115,8 @@ def eliminar_post(id: int, db: Session = Depends(get_db), current_user: models.U
     if not post:
         raise HTTPException(status_code=404, detail="Post no encontrado")
     
-    try:
-        ruta_foto = post.imagen_url.replace(BASE_URL, "").lstrip("/")
-        if os.path.exists(ruta_foto):
-            os.remove(ruta_foto)
-    except Exception as e:
-        print(f"Error al borrar archivo físico: {e}")
+    if post.imagen_url:
+        delete_from_cloudinary(post.imagen_url)
 
     db.delete(post)
     db.commit()
@@ -150,20 +144,15 @@ async def actualizar_post(
     post.categoria = categoria
 
     if imagen:
-        # Borrar antigua
-        try:
-            ruta_antigua = post.imagen_url.replace(BASE_URL, "").lstrip("/")
-            if os.path.exists(ruta_antigua):
-                os.remove(ruta_antigua)
-        except Exception as e:
-            print(f"Error borrando imagen antigua: {e}")
+        # Borrar antigua de Cloudinary
+        if post.imagen_url:
+            delete_from_cloudinary(post.imagen_url)
 
-        # Guardar nueva
-        nombre_seguro = "".join([c if c.isalnum() or c in ".-" else "_" for c in imagen.filename])
-        ruta_archivo = f"uploads/{nombre_seguro}"
-        with open(ruta_archivo, "wb") as buffer:
-            buffer.write(await imagen.read())
-        post.imagen_url = f"{BASE_URL}/uploads/{nombre_seguro}"
+        # Optimizar y subir nueva
+        contenido_optimizado, _ = process_image(await imagen.read(), imagen.filename)
+        nueva_url = upload_to_cloudinary(contenido_optimizado, folder="halconero/blog")
+        if nueva_url:
+            post.imagen_url = nueva_url
 
     db.commit()
     db.refresh(post)

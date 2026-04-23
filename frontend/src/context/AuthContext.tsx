@@ -1,13 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-interface User {
-  id: number;
-  nombre: string;
-  email: string;
-  telefono?: string;
-  foto_perfil?: string;
-  is_admin: boolean;
-}
+import { type User } from '../types/AppContextType';
 
 interface AuthContextType {
   user: User | null;

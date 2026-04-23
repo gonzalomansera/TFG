@@ -1,39 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useApi } from '../hooks/useApi';
 import { Camera, Save, User as UserIcon, Phone, Mail, Loader2, CheckCircle2, Package, ShoppingBag, ChevronDown, ChevronUp } from 'lucide-react';
+import { type Pedido, type Cita, type ItemPedido } from '../types/AppContextType';
+import { getImageUrl } from '../utils/imageHelper';
 
 const Profile = () => {
+  const { request } = useApi();
   const { user, token } = useAuth();
   const [nombre, setNombre] = useState(user?.nombre || '');
   const [telefono, setTelefono] = useState(user?.telefono || '');
   const [foto, setFoto] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(user?.foto_perfil ? `${import.meta.env.VITE_API_URL}${user.foto_perfil}` : null);
+  const [preview, setPreview] = useState<string | null>(getImageUrl(user?.foto_perfil) || null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loadingPedidos, setLoadingPedidos] = useState(true);
   const [expandedPedido, setExpandedPedido] = useState<number | null>(null);
 
-  const [citas, setCitas] = useState<any[]>([]);
-  const [todasLasCitas, setTodasLasCitas] = useState<any[]>([]);
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [todasLasCitas, setTodasLasCitas] = useState<Cita[]>([]);
   const [loadingCitas, setLoadingCitas] = useState(true);
 
   useEffect(() => {
     const fetchPedidos = async () => {
       try {
-        const url = user?.is_admin ? `${import.meta.env.VITE_API_URL}/pedidos/` : `${import.meta.env.VITE_API_URL}/pedidos/me`;
-        const res = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setPedidos(data);
-        }
+        const endpoint = user?.is_admin ? '/pedidos/' : '/pedidos/me';
+        const data = await request<Pedido[]>(endpoint);
+        if (data) setPedidos(data);
       } catch (error) {
-        console.error("Error fetching pedidos:", error);
+        console.error(error);
       } finally {
         setLoadingPedidos(false);
       }
@@ -41,12 +38,9 @@ const Profile = () => {
 
     const fetchCitas = async () => {
       try {
-        const url = user?.is_admin ? `${import.meta.env.VITE_API_URL}/citas/` : `${import.meta.env.VITE_API_URL}/citas/mis-citas`;
-        const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
+        const endpoint = user?.is_admin ? '/citas/' : '/citas/mis-citas';
+        const data = await request<Cita[]>(endpoint);
+        if (data) {
           if (user?.is_admin) setTodasLasCitas(data);
           else setCitas(data);
         }
@@ -62,20 +56,13 @@ const Profile = () => {
 
   const updateCitaEstado = async (id: number, nuevoEstado: string) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/citas/${id}/estado`, {
+      await request(`/citas/${id}/estado`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: nuevoEstado })
       });
-      if (res.ok) {
-        // Refresh
-        const url = `${import.meta.env.VITE_API_URL}/citas/`;
-        const r = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-        setTodasLasCitas(await r.json());
-      }
+      const updatedData = await request<Cita[]>('/citas/');
+      if (updatedData) setTodasLasCitas(updatedData);
     } catch (e) { console.error(e); }
   };
 
@@ -84,7 +71,7 @@ const Profile = () => {
       setNombre(user.nombre);
       setTelefono(user.telefono || '');
       if (user.foto_perfil) {
-        setPreview(`${import.meta.env.VITE_API_URL}${user.foto_perfil}`);
+        setPreview(getImageUrl(user.foto_perfil));
       }
     }
   }, [user]);
@@ -105,29 +92,17 @@ const Profile = () => {
     const formData = new FormData();
     formData.append('nombre', nombre);
     formData.append('telefono', telefono);
-    if (foto) {
-      formData.append('foto', foto);
-    }
+    if (foto) formData.append('foto', foto);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
+      await request('/auth/me', {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData
       });
-
-      if (res.ok) {
-        setMessage({ type: 'success', text: 'Perfil actualizado correctamente' });
-        // En una app real, aquí llamaríamos a un fetchMe() del context para actualizar el estado global
-        // Por ahora, el usuario verá el cambio al recargar o si implementamos el refresco manual
-        setTimeout(() => window.location.reload(), 1500); 
-      } else {
-        setMessage({ type: 'error', text: 'Error al actualizar el perfil' });
-      }
+      setMessage({ type: 'success', text: 'Perfil actualizado correctamente' });
+      setTimeout(() => window.location.reload(), 1500); 
     } catch (error) {
-      setMessage({ type: 'error', text: 'Error de conexión' });
+      setMessage({ type: 'error', text: 'Error al actualizar el perfil' });
     } finally {
       setLoading(false);
     }
@@ -298,9 +273,9 @@ const Profile = () => {
                   {expandedPedido === pedido.id && (
                     <div className="p-6 border-t border-white/10 bg-black/20">
                       <div className="space-y-4">
-                        {pedido.items.map((item: any) => (
+                        {pedido.items.map((item: ItemPedido) => (
                           <div key={item.id} className="flex items-center gap-4">
-                            <img src={item.imagen_url} alt={item.nombre} className="w-16 h-16 object-cover rounded-lg border border-white/10" />
+                            <img src={getImageUrl(item.imagen_url)} alt={item.nombre} className="w-16 h-16 object-cover rounded-lg border border-white/10" />
                             <div className="flex-1">
                               <p className="text-sm text-white font-medium">{item.nombre}</p>
                               <p className="text-xs text-gray-500 mt-1">{item.cantidad} x {item.precio_unitario.toFixed(2)}€</p>
