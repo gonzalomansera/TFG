@@ -3,6 +3,7 @@ import datetime
 from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
 from models import Usuario, Obra, Cita, Post, Producto, Resena, Comentario, Like, LikeObra, Pedido, PedidoItem
+from auth_utils import get_password_hash
 
 # Asegurarse de que las tablas existan
 Base.metadata.create_all(bind=engine)
@@ -10,18 +11,34 @@ Base.metadata.create_all(bind=engine)
 def seed_data():
     db = SessionLocal()
     try:
+        print("Limpiando datos antiguos...")
+        db.query(LikeObra).delete()
+        db.query(Like).delete()
+        db.query(Comentario).delete()
+        db.query(Resena).delete()
+        db.query(Cita).delete()
+        db.query(PedidoItem).delete()
+        db.query(Pedido).delete()
+        db.query(Post).delete()
+        db.query(Obra).delete()
+        db.query(Producto).delete()
+        db.query(Usuario).delete()
+        db.commit()
+
         print("Iniciando inserción de datos...")
 
         # 1. Usuarios (15)
-        # Hash de 'password123' generado con bcrypt para que funcionen los logins
-        dummy_hash = "$2b$12$K8K9.QyS5vX/Y6YI0uU8.e6M0U6fS2y5Vj9O9Y6U0Y0U0Y0U0Y0U."
+        # Ahora usamos el generador real de tu app
+        password_clara = "password123"
+        hashed = get_password_hash(password_clara)
+        
         usuarios = []
         for i in range(1, 16):
             u = Usuario(
                 nombre=f"Usuario {i}",
                 email=f"usuario{i}@example.com",
                 telefono=f"6000000{i:02d}",
-                hashed_password=dummy_hash,
+                hashed_password=hashed,
                 is_admin=1 if i == 1 else 0,
                 foto_perfil=f"https://i.pravatar.cc/150?u={i}"
             )
