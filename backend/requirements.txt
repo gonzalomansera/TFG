@@ -4,6 +4,8 @@ sqlalchemy
 psycopg2-binary
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt
 python-multipart
 python-dotenv
 cloudinary
+Pillow
