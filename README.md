@@ -20,7 +20,7 @@
 4. [Roles de Usuario y Permisos](#4-roles-de-usuario-y-permisos)
 5. [Despliegue y Dockerización](#5-despliegue-y-dockerización)
 6. [Casos de Uso](#6-casos-de-uso)
-7. [Guía de Capturas de Pantalla Recomendadas](#7-guía-de-capturas-de-pantalla-recomendadas)
+7. [Guía de Capturas de Pantalla](#7-guía-de-capturas-de-pantalla-recomendadas)
 8. [Conclusiones y Trabajo Futuro](#8-conclusiones-y-trabajo-futuro)
 
 ---
