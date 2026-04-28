@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Minus, Trash2, ShoppingBag, CreditCard, Smartphone, Truck, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { X, Plus, Minus, Trash2, ShoppingBag, CreditCard, Truck, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useCarrito } from '../context/CarritoContext';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -91,7 +91,7 @@ export const CarritoView = ({ isOpen, onClose }: CarritoViewProps) => {
           {paso !== 'EXITO' && (
             <div className="p-6 border-b border-white/5 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                {paso !== 'LISTA' && paso !== 'EXITO' && (
+                {paso !== 'LISTA' && (
                   <button 
                     onClick={() => setPaso(paso === 'PASARELA' ? 'PAGO' : 'LISTA')} 
                     className="mr-2 hover:text-[#E08733] transition-colors"

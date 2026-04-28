@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { ShoppingCart, Trash2, Edit3 } from 'lucide-react'
 import type { Producto } from '../types/AppContextType';
 import { useCarrito } from '../context/CarritoContext';

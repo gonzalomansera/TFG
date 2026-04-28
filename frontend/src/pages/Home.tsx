@@ -14,7 +14,7 @@ import type { Obra, Producto, Resena } from '../types/AppContextType';
 import { getImageUrl } from '../utils/imageHelper';
 
 export const Home = () => {
-  const { request, loading } = useApi();
+  const { request } = useApi();
   const { user } = useAuth();
   const [ultimaObra, setUltimaObra] = useState<Obra | null>(null);
   const [productos, setProductos] = useState<Producto[]>([]);

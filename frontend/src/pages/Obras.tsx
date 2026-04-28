@@ -6,7 +6,7 @@ import { type Obra } from '../types/AppContextType';
 import { getImageUrl } from '../utils/imageHelper';
 
 export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
-  const { request, loading } = useApi();
+  const { request } = useApi();
   const [obras, setObras] = useState<Obra[]>([]);
   const [filtro, setFiltro] = useState('Todos');
   const [mostrarForm, setMostrarForm] = useState(false);

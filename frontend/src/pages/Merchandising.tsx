@@ -5,7 +5,7 @@ import { type Producto } from '../types/AppContextType'
 import { useApi } from '../hooks/useApi'
 
 export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
-  const { request, loading } = useApi();
+  const { request } = useApi();
   const [productos, setProductos] = useState<Producto[]>([])
   const [mostrarForm, setMostrarForm] = useState(false)
   const [idEnEdicion, setIdEnEdicion] = useState<number | null>(null)
@@ -103,7 +103,7 @@ export const Merchandising = ({ isAdmin }: { isAdmin: boolean }) => {
                 producto={p}
                 isAdmin={isAdmin}
                 onDelete={handleDelete}
-                onEdit={(e) => { e.stopPropagation(); abrirEdicion(p); }}
+                onEdit={() => abrirEdicion(p)}
               />
             </div>
           ))}

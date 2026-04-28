@@ -7,18 +7,15 @@ interface StripePaymentFormProps {
   total: number;
 }
 
-export const StripePaymentForm = ({ onSuccess, total }: StripePaymentFormProps) => {
+export const StripePaymentForm = ({ onSuccess }: StripePaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements) return;
-
-    setProcessing(true);
 
     const { error: submitError } = await stripe.confirmPayment({
       elements,
@@ -27,7 +24,6 @@ export const StripePaymentForm = ({ onSuccess, total }: StripePaymentFormProps) 
 
     if (submitError) {
       setError(submitError.message || 'Ocurrió un error al procesar el pago.');
-      setProcessing(false);
     } else {
       // Pago confirmado con éxito en Stripe
       onSuccess();
