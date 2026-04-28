@@ -102,9 +102,12 @@ def eliminar_producto(id: int, db: Session = Depends(get_db), current_user: mode
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     
+    # Primero borramos las referencias en los pedidos para evitar errores de clave foránea
+    db.query(models.PedidoItem).filter(models.PedidoItem.producto_id == id).delete()
+
     if producto.imagen_url:
         delete_from_cloudinary(producto.imagen_url)
 
     db.delete(producto)
     db.commit()
-    return {"mensaje": "Producto eliminado correctamente"}
+    return {"mensaje": "Producto eliminado correctamente (y sus referencias en pedidos)"}

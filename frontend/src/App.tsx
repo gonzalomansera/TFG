@@ -15,6 +15,7 @@ import { Register } from './pages/Register';
 import { Home } from './pages/Home';
 import { useAuth } from './context/AuthContext';
 import Profile from './pages/Profile';
+import { NotFound } from './pages/NotFound';
 
 function App() {
   const { user, loading } = useAuth();
@@ -47,7 +48,7 @@ function App() {
             
             <Route path="/gestor-halconero" element={<Navigate to="/login" />} />
             
-            <Route path="*" element={<Home />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
 
