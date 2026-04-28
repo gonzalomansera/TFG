@@ -5,7 +5,7 @@
 
 | Campo | Detalle |
 |---|---|
-| Autor | Gonzalo Mansera Ruiz |
+| Autor | Gonzalo Mansera Ruiz|
 | Tutor | Ignacio Tomás Cabrero Barragán |
 | Titulación | Desarrollo de Aplicaciones Web |
 | Curso Académico | 2025-2026 |
