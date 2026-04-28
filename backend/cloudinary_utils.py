@@ -5,12 +5,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True
-)
+cloudinary_url = os.getenv("CLOUDINARY_URL")
+
+if cloudinary_url:
+    # Si existe la URL completa, la usamos directamente
+    cloudinary.config(cloudinary_url=cloudinary_url, secure=True)
+else:
+    # Si no, usamos las piezas sueltas
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+        secure=True
+    )
 
 def upload_to_cloudinary(file_content: bytes, folder: str = "halconero") -> str:
     """
