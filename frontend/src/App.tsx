@@ -38,9 +38,9 @@ const Shell = () => {
 
   // Sitio público
   return (
-    <div className="app-container">
+    <div className="pw">
       <NavBar />
-      <main className="main-content">
+      <main>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/estudio" element={<Trayectoria />} />
