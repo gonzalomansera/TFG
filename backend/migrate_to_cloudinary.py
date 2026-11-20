@@ -22,20 +22,7 @@ def migrate():
                         o.imagen_url = new_url
                         print(f"✅ Success: {new_url}")
 
-    # 2. Migrar Productos
-    productos = db.query(models.Producto).all()
-    for p in productos:
-        if p.imagen_url and p.imagen_url.startswith("/uploads/"):
-            path = f".{p.imagen_url}"
-            if os.path.exists(path):
-                print(f"Uploading Producto: {p.nombre}...")
-                with open(path, "rb") as f:
-                    new_url = upload_to_cloudinary(f.read(), folder="halconero/productos")
-                    if new_url:
-                        p.imagen_url = new_url
-                        print(f"✅ Success: {new_url}")
-
-    # 3. Migrar Blog Posts
+    # 2. Migrar Blog Posts
     posts = db.query(models.Post).all()
     for post in posts:
         if post.imagen_url and post.imagen_url.startswith("/uploads/"):

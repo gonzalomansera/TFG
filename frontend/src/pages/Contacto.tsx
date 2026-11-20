@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, MapPin, Instagram, Mail, Calendar, MessageSquare } from 'lucide-react';
+import { Send, MapPin, Instagram, Mail, Calendar, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
 
@@ -13,219 +13,151 @@ export const Contacto = () => {
     nombre: user?.nombre || '',
     email: user?.email || '',
     telefono: user?.telefono || '',
-    tipo: 'Cita para Tatuaje',
+    tipo: 'Tatuaje nuevo',
     idea: '',
-    fechaPreferencia: 'A convenir'
+    fechaPreferencia: 'A convenir',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      alert("Por favor, inicia sesión para solicitar una cita.");
-      return;
-    }
     setLoading(true);
-
     try {
-      await request('/citas/', {
+      await request('/citas/solicitud', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          idea: `[${formData.tipo}] - Propuesta: ${formData.idea}`,
-          fecha_cita: formData.fechaPreferencia
-        })
+          nombre: formData.nombre,
+          email: formData.email,
+          telefono: formData.telefono,
+          tipo: formData.tipo,
+          idea: formData.idea,
+          fecha_cita: formData.fechaPreferencia,
+        }),
       });
       setEnviado(true);
-      setFormData({ nombre: user.nombre, email: user.email, telefono: user.telefono || '', tipo: 'Cita Tatuaje', idea: '', fechaPreferencia: 'A convenir' });
+      setFormData({ nombre: user?.nombre || '', email: user?.email || '', telefono: user?.telefono || '', tipo: 'Tatuaje nuevo', idea: '', fechaPreferencia: 'A convenir' });
     } catch (error) {
       console.error(error);
-      alert("Hubo un error al enviar la solicitud.");
+      alert('Hubo un error al enviar la solicitud. Inténtalo de nuevo o escríbeme por Instagram.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <section className="page-container custom-bg-dark animate-smoke-in">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="heading-2 mb-4">Citas & Contacto</h2>
-          <div className="h-1 w-20 bg-[#E08733] mx-auto"></div>
-          <p className="mt-6 text-caption text-gray-400 italic">
-            Reserva tu sesión o solicita presupuesto para obras personalizadas
+    <>
+      <header className="pw-page-head">
+        <div className="pw-wrap">
+          <p className="pw-eyebrow">Reserva</p>
+          <h1>Pide tu cita</h1>
+          <p className="pw-lead">
+            Tatúo en Granada. Cuéntame tu idea y reservemos una sesión; cuanto más
+            detalle me des (estilo, tamaño y zona del cuerpo), mejor podré preparar tu proyecto.
           </p>
         </div>
+      </header>
 
-        <div className="grid lg:grid-cols-5 gap-12">
-          {/* Columna Izquierda: Info Directa */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-white/5">
-              <h3 className="text-caption text-[#E08733] mb-6 flex items-center gap-2">
-                <MessageSquare size={14} /> Información Directa
-              </h3>
-
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <MapPin className="text-[#E08733] shrink-0" size={18} />
+      <section className="pw-section">
+        <div className="pw-wrap">
+          <div className="pw-contact-grid">
+            {/* Datos directos */}
+            <aside>
+              <ul className="pw-info">
+                <InfoRow icon={<MapPin size={18} />} label="Estudio" value="Born Again Tattoo · Barrio Fígares, Granada" />
+                <InfoRow icon={<Mail size={18} />} label="Email" value="josehalconero@gmail.com" />
+                <InfoRow icon={<Instagram size={18} />} label="Instagram" value="@josehalconero" />
+                <li>
+                  <Calendar size={18} />
                   <div>
-                    <p className="text-caption">Estudio</p>
-                    <p className="text-body mt-1">Born Again Tattoo, Barrio Fígares, Granada</p>
+                    <small>Horarios</small>
+                    <p>Atiendo solo con cita previa. Te responderé personalmente para concretar fecha y presupuesto.</p>
                   </div>
-                </div>
+                </li>
+              </ul>
+            </aside>
 
-                <div className="flex items-start gap-4">
-                  <Mail className="text-[#E08733] shrink-0" size={18} />
-                  <div>
-                    <p className="text-caption">Email</p>
-                    <p className="text-body mt-1">josehalconero@gmail.com</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <Instagram className="text-[#E08733] shrink-0" size={18} />
-                  <div>
-                    <p className="text-caption">Instagram</p>
-                    <p className="text-body mt-1">@josehalconero</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-[#E08733]/5 border border-[#E08733]/20 rounded-2xl">
-              <div className="flex items-center gap-3 text-[#E08733] mb-4">
-                <Calendar size={20} />
-                <span className="text-caption">Horarios</span>
-              </div>
-              <p className="text-body leading-relaxed">
-                Atiendo bajo cita previa. Escríbeme detallando tu idea (tamaño, zona del cuerpo o dimensiones de la obra) para agilizar el proceso.
-              </p>
-            </div>
-          </div>
-
-          {/* Columna Derecha: Formulario */}
-          <div className="lg:col-span-3">
-            <div className="bg-[#1a1a1a] p-10 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden">
+            {/* Formulario */}
+            <div>
               {enviado ? (
-                <div className="text-center py-20">
-                  <div className="w-16 h-16 bg-[#E08733]/20 text-[#E08733] rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Send size={30} />
-                  </div>
-                  <h3 className="text-xl font-bold uppercase mb-2">Petición recibida</h3>
-                  <p className="text-gray-400 text-sm">Gracias por contactar, Jose revisará tu propuesta pronto.</p>
-                  <button onClick={() => setEnviado(false)} className="mt-8 text-[10px] uppercase tracking-widest text-[#E08733] underline">Nueva consulta</button>
+                <div className="pw-done">
+                  <CheckCircle2 size={40} strokeWidth={1.5} />
+                  <h3>Petición recibida</h3>
+                  <p>Gracias por contactar. Jose revisará tu propuesta pronto.</p>
+                  <button onClick={() => setEnviado(false)} className="pw-link">Nueva consulta</button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Nombre Completo</label>
-                      <input
-                        type="text"
-                        name="nombre"
-                        required
-                        value={formData.nombre}
-                        onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                        className="input-field bg-[#2a2a2a] rounded-xl px-4 py-4 border-white/5"
-                        placeholder="EJ. JUAN PÉREZ"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Teléfono</label>
-                      <input
-                        type="tel"
-                        name="telefono"
-                        required
-                        value={formData.telefono}
-                        onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                        className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all text-white"
-                        placeholder="600 000 000"
-                      />
-                    </div>
+                <form onSubmit={handleSubmit} className="pw-form">
+                  <div className="pw-form-row">
+                    <Field label="Nombre completo" id="nombre">
+                      <input id="nombre" type="text" required value={formData.nombre} onChange={(e) => setFormData({ ...formData, nombre: e.target.value })} className="pw-input" placeholder="Tu nombre" autoComplete="name" />
+                    </Field>
+                    <Field label="Teléfono" id="telefono">
+                      <input id="telefono" type="tel" required value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} className="pw-input" placeholder="600 000 000" autoComplete="tel" />
+                    </Field>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Email de contacto</label>
-                    <input
-                      type="email"
-                      name="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all text-white"
-                      placeholder="TU@EMAIL.COM"
-                    />
-                  </div>
+                  <Field label="Email de contacto" id="email">
+                    <input id="email" type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pw-input" placeholder="tu@email.com" autoComplete="email" />
+                  </Field>
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Preferencia de Fecha</label>
+                  <div className="pw-form-row">
+                    <Field label="Tipo de proyecto" id="tipo">
+                      <select id="tipo" value={formData.tipo} onChange={(e) => setFormData({ ...formData, tipo: e.target.value })} className="pw-input">
+                        <option>Tatuaje nuevo</option>
+                        <option>Ampliación / Cover-up</option>
+                        <option>Diseño personalizado</option>
+                        <option>Consulta general</option>
+                      </select>
+                    </Field>
+                    <Field label="Preferencia de fecha" id="pref">
                       <select
+                        id="pref"
                         value={formData.fechaPreferencia === 'A convenir' ? 'A convenir' : 'especifica'}
                         onChange={(e) => setFormData({ ...formData, fechaPreferencia: e.target.value === 'A convenir' ? 'A convenir' : '' })}
-                        className="input-field bg-[#2a2a2a] rounded-xl px-4 py-4 border-white/5"
+                        className="pw-input"
                       >
-                        <option value="A convenir">A convenir con Jose</option>
-                        <option value="especifica">Elegir fecha específica</option>
+                        <option value="A convenir">A convenir</option>
+                        <option value="especifica">Elegir fecha concreta</option>
                       </select>
-                    </div>
-
-                    {formData.fechaPreferencia !== 'A convenir' && (
-                      <div className="space-y-2 animate-fade-in">
-                        <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Selecciona el día</label>
-                        <input
-                          type="date"
-                          required
-                          min={new Date().toISOString().split('T')[0]}
-                          value={formData.fechaPreferencia}
-                          onChange={(e) => setFormData({ ...formData, fechaPreferencia: e.target.value })}
-                          className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all text-white"
-                        />
-                      </div>
-                    )}
+                    </Field>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Asunto / Motivo</label>
-                    <select
-                      name="motivo"
-                      value={formData.tipo}
-                      onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                      className="input-field bg-[#2a2a2a] rounded-xl px-4 py-4 border-white/5"
-                    >
-                      <option>Cita para Tatuaje</option>
-                      <option>Encargo de Imaginería / Talla</option>
-                      <option>Restauración de Obra</option>
-                      <option>Pintura o Diseño</option>
-                      <option>Consulta General</option>
-                    </select>
-                  </div>
+                  {formData.fechaPreferencia !== 'A convenir' && (
+                    <Field label="Selecciona el día" id="dia">
+                      <input id="dia" type="date" required min={new Date().toISOString().split('T')[0]} value={formData.fechaPreferencia} onChange={(e) => setFormData({ ...formData, fechaPreferencia: e.target.value })} className="pw-input" />
+                    </Field>
+                  )}
 
-                  <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-[0.2em] text-gray-500 font-bold ml-1">Cuéntame tu idea</label>
-                    <textarea
-                      name="mensaje"
-                      rows={4}
-                      required
-                      value={formData.idea}
-                      onChange={(e) => setFormData({ ...formData, idea: e.target.value })}
-                      className="w-full bg-[#2a2a2a] border border-white/5 rounded-xl px-4 py-4 text-xs focus:border-[#E08733] outline-none transition-all resize-none text-white"
-                      placeholder="DESCRIBE TU PROYECTO, TAMAÑO, ZONA..."
-                    ></textarea>
-                  </div>
+                  <Field label="Cuéntame tu idea" id="idea">
+                    <textarea id="idea" rows={5} required value={formData.idea} onChange={(e) => setFormData({ ...formData, idea: e.target.value })} className="pw-input" placeholder="Describe tu proyecto: estilo, tamaño, zona del cuerpo..." />
+                  </Field>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-white text-black font-bold py-5 rounded-xl uppercase tracking-[0.3em] text-[10px] hover:bg-[#E08733] transition-all flex items-center justify-center gap-3 shadow-xl"
-                  >
-                    {loading ? 'Enviando...' : <><Send size={14} /> Enviar Solicitud</>}
+                  <button type="submit" disabled={loading} className="pw-btn pw-btn-primary pw-btn-block">
+                    {loading ? 'Enviando...' : (<><Send size={14} /> Enviar solicitud</>)}
                   </button>
                 </form>
               )}
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 };
+
+const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
+  <li>
+    {icon}
+    <div>
+      <small>{label}</small>
+      <span>{value}</span>
+    </div>
+  </li>
+);
+
+const Field = ({ label, id, children }: { label: string; id: string; children: React.ReactNode }) => (
+  <div className="pw-field">
+    <label htmlFor={id}>{label}</label>
+    {children}
+  </div>
+);

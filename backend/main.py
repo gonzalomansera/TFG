@@ -11,16 +11,22 @@ load_dotenv()
 load_dotenv("../.env")
 
 from database import engine, Base
-from routes import productos, obras, blog, auth, resenas, pedidos, citas
+from routes import obras, blog, auth, resenas, citas
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Jose Halconero API")
 
+# Orígenes permitidos (CORS). En producción define ALLOWED_ORIGINS en el .env,
+# p.ej. "https://josehalconero.com,https://www.josehalconero.com".
+# En local, por defecto, se permite todo.
+_origins_env = os.getenv("ALLOWED_ORIGINS", "*")
+allowed_origins = ["*"] if _origins_env.strip() == "*" else [o.strip() for o in _origins_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -29,12 +35,10 @@ if not os.path.exists("uploads"):
     os.makedirs("uploads")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-app.include_router(productos.router, prefix="/api")
 app.include_router(obras.router, prefix="/api")
-app.include_router(blog.router, prefix="/api") 
+app.include_router(blog.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(resenas.router, prefix="/api")
-app.include_router(pedidos.router, prefix="/api")
 app.include_router(citas.router, prefix="/api")
 
 # Servir Frontend

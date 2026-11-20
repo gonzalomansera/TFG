@@ -1,175 +1,100 @@
 import { useEffect, useState } from 'react';
-import { Trash2, X, Edit3 } from 'lucide-react';
+import { X, ArrowRight, Instagram } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { ArtCard } from '../components/ArtCard';
+import { OBRAS_INSTAGRAM } from '../lib/demoData';
 import { type Obra } from '../types/AppContextType';
 import { getImageUrl } from '../utils/imageHelper';
 
-export const Obras = ({ isAdmin }: { isAdmin: boolean }) => {
+export const Obras = () => {
   const { request } = useApi();
   const [obras, setObras] = useState<Obra[]>([]);
-  const [filtro, setFiltro] = useState('Todos');
-  const [mostrarForm, setMostrarForm] = useState(false);
-  const [idEnEdicion, setIdEnEdicion] = useState<number | null>(null);
-  const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
+  const [selected, setSelected] = useState<Obra | null>(null);
 
-  // Estados Formulario
-  const [titulo, setTitulo] = useState('');
-  const [desc, setDesc] = useState('');
-  const [tipo, setTipo] = useState('Imaginería');
-  const [archivo, setArchivo] = useState<File | null>(null);
+  useEffect(() => {
+    request<Obra[]>('/obras/').then((d) => Array.isArray(d) && setObras(d)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const fetchObras = async () => {
-    try {
-      const data = await request<Obra[]>('/obras/');
-      if (data) setObras(data);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // Cerrar el visor con Escape y bloquear el scroll de fondo
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSelected(null);
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [selected]);
 
-  useEffect(() => { fetchObras(); }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append('titulo', titulo);
-    formData.append('descripcion', desc);
-    formData.append('tipo', tipo);
-    if (archivo) formData.append('imagen', archivo);
-
-    const url = idEnEdicion ? `/obras/${idEnEdicion}` : `/obras/`;
-    const method = idEnEdicion ? 'PUT' : 'POST';
-
-    try {
-      await request(url, { method, body: formData });
-      setMostrarForm(false);
-      setIdEnEdicion(null);
-      fetchObras();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const deleteObra = async (id: number) => {
-    if (!window.confirm("¿Borrar obra?")) return;
-    try {
-      await request(`/obras/${id}`, { method: 'DELETE' });
-      setObras(obras.filter(o => o.id !== id));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const abrirEdicion = (o: Obra) => {
-    setIdEnEdicion(o.id);
-    setTitulo(o.titulo);
-    setDesc(o.descripcion);
-    setTipo(o.tipo);
-    setArchivo(null);
-    setMostrarForm(true);
-  };
-
-  const tipologias = ['Todos', 'Imaginería', 'Dibujo', 'Tatuaje'];
-  const filtradas = filtro === 'Todos' ? obras : obras.filter(o => o.tipo === filtro);
+  // Si aún no hay obras subidas desde el panel, se muestran sus trabajos de Instagram
+  const display = obras.length > 0 ? obras : OBRAS_INSTAGRAM;
 
   return (
-    <section className="min-h-screen bg-[#0A0A0A] pt-40 pb-20 relative overflow-hidden">
-      {/* Noise Overlay */}
-      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-      
-      <div className="max-w-7xl mx-auto px-10">
-        
-        <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
-          <div className="space-y-4">
-            <span className="text-caption font-black text-[#E08733]">Archivo Visual</span>
-            <h2 className="text-6xl md:text-8xl font-serif italic text-white tracking-tighter leading-none">Galería de <br /> Obras</h2>
-          </div>
+    <>
+      <header className="pw-page-head">
+        <div className="pw-wrap">
+          <p className="pw-eyebrow">Archivo visual · Granada</p>
+          <h1>Portfolio</h1>
+          <p className="pw-lead">
+            Una selección de tatuajes realizados en Granada.
+            Toca cualquier pieza para verla en grande.
+          </p>
+        </div>
+      </header>
 
-          <div className="flex flex-wrap gap-8 items-center bg-white/5 backdrop-blur-3xl px-10 py-5 rounded-full border border-white/10">
-            {tipologias.map(t => (
-              <button
-                key={t}
-                onClick={() => setFiltro(t)}
-                className={`text-[10px] uppercase tracking-[0.4em] transition-all whitespace-nowrap font-black ${filtro === t ? 'text-[#E08733]' : 'text-gray-500 hover:text-white'}`}
-              >
-                {t}
+      <section className="pw-section">
+        <div className="pw-wrap">
+          <div className="pw-gallery">
+            {display.map((obra, i) => (
+              <button key={obra.id} className="pw-tile" onClick={() => setSelected(obra)} aria-label={`Ampliar ${obra.titulo}`}>
+                <img src={getImageUrl(obra.imagen_url)} alt={obra.titulo} loading="lazy" decoding="async" />
+                <span className="pw-tile-label">
+                  <small>{String(i + 1).padStart(2, '0')} · {obra.tipo}</small>
+                  {obra.titulo}
+                </span>
               </button>
             ))}
           </div>
-
-          {isAdmin && (
-            <button
-              onClick={() => { setIdEnEdicion(null); setTitulo(''); setDesc(''); setTipo('Imaginería'); setArchivo(null); setMostrarForm(true); }}
-              className="bg-[#E08733] text-black px-10 py-5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-xl"
-            >
-              Nueva Obra
-            </button>
-          )}
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {filtradas.map((obra) => (
-            <div key={obra.id} className="space-y-4 cursor-pointer" onClick={() => setSelectedObra(obra)}>
-              <ArtCard obra={obra} onLikeToggle={fetchObras} />
-              {isAdmin && (
-                <div className="flex gap-6 border-t border-white/10 pt-6 px-4">
-                  <button onClick={(e) => { e.stopPropagation(); deleteObra(obra.id); }} className="text-red-500/70 hover:text-red-400 transition-colors flex items-center gap-2 text-[9px] uppercase font-black tracking-widest"><Trash2 size={12}/> Borrar</button>
-                  <button onClick={(e) => { e.stopPropagation(); abrirEdicion(obra); }} className="text-white/60 hover:text-white transition-colors flex items-center gap-2 text-[9px] uppercase font-black tracking-widest"><Edit3 size={12}/> Editar</button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {mostrarForm && (
-        <div className="modal-overlay z-[150]">
-          <div className="modal-content max-w-2xl bg-[#111] border-white/10 p-12">
-            <button onClick={() => setMostrarForm(false)} className="absolute top-8 right-8 text-gray-500 hover:text-white"><X size={30}/></button>
-            <h3 className="heading-1 text-2xl mb-12">{idEnEdicion ? 'Editar Obra' : 'Nueva Obra'}</h3>
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <input type="text" placeholder="TÍTULO DE LA OBRA" className="input-field" value={titulo} onChange={e => setTitulo(e.target.value)} required />
-              <select className="input-field border-b" value={tipo} onChange={e => setTipo(e.target.value)}>
-                <option value="Imaginería">Imaginería</option>
-                <option value="Dibujo">Dibujo</option>
-                <option value="Tatuaje">Tatuaje</option>
-              </select>
-              <textarea placeholder="DESCRIPCIÓN Y DETALLES" className="textarea-field h-32" value={desc} onChange={e => setDesc(e.target.value)} required />
-              <div className="flex flex-col gap-2">
-                <input type="file" className="text-[10px] text-gray-500" onChange={(e) => setArchivo(e.target.files?.[0] || null)} required={!idEnEdicion} />
-              </div>
-              <button className="w-full btn btn-primary py-6 text-xs">{idEnEdicion ? 'Guardar Cambios' : 'Publicar Obra'}</button>
-            </form>
+      <section className="pw-section pw-cta">
+        <div className="pw-wrap pw-sec-head">
+          <h2 className="pw-sec-title">¿Te gusta lo que ves?</h2>
+          <div className="pw-actions">
+            <Link className="pw-btn pw-btn-primary" to="/contacto">Reservar cita <ArrowRight size={16} /></Link>
+            <a className="pw-btn pw-btn-ghost" href="https://www.instagram.com/josehalconero/" target="_blank" rel="noopener noreferrer">
+              <Instagram size={16} /> Más en Instagram
+            </a>
           </div>
         </div>
-      )}
+      </section>
 
-      {selectedObra && (
-        <div className="modal-overlay z-[100]" onClick={() => setSelectedObra(null)}>
-          <div className="modal-content max-w-7xl h-[85vh] p-0 overflow-hidden bg-[#0D0D0D] border-white/5 flex flex-col lg:flex-row" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setSelectedObra(null)} className="absolute top-8 right-8 z-10 text-white/50 hover:text-white transition-colors">
-              <X size={32} strokeWidth={1} />
+      {/* Visor */}
+      {selected && (
+        <div className="pw-modal" onClick={() => setSelected(null)} role="dialog" aria-modal="true" aria-label={selected.titulo}>
+          <div className="pw-modal-box" onClick={(e) => e.stopPropagation()}>
+            <button className="pw-close" onClick={() => setSelected(null)} aria-label="Cerrar" autoFocus>
+              <X size={24} strokeWidth={1.5} />
             </button>
-            
-            <div className="lg:w-[60%] h-[500px] lg:h-full overflow-hidden">
-              <img src={getImageUrl(selectedObra.imagen_url)} alt={selectedObra.titulo} className="w-full h-full object-cover" decoding="async" loading="lazy" />
+            <div className="pw-modal-img">
+              <img src={getImageUrl(selected.imagen_url)} alt={selected.titulo} decoding="async" />
             </div>
-            <div className="lg:w-[40%] p-12 lg:p-20 flex flex-col justify-center bg-[#111] overflow-y-auto">
-              <span className="text-[#E08733] text-[10px] uppercase tracking-[0.4em] font-black mb-4">{selectedObra.tipo}</span>
-              <h2 className="text-4xl lg:text-6xl font-serif italic text-white leading-tight mb-8">{selectedObra.titulo}</h2>
-              <div className="h-[1px] w-12 bg-[#E08733] mb-8"></div>
-              <p className="text-gray-400 text-sm md:text-base font-light leading-relaxed mb-10">{selectedObra.descripcion}</p>
-              
-              <div className="flex items-center gap-4 text-white/40 text-[9px] uppercase tracking-widest font-black pt-8 border-t border-white/5">
-                 <span>Archivado en Galería</span>
-                 <span className="w-1 h-1 bg-white/20 rounded-full"></span>
-                 <span>Halconero Studio</span>
+            <div className="pw-modal-info">
+              <span className="pw-index">{selected.tipo}</span>
+              <h2>{selected.titulo}</h2>
+              <p>{selected.descripcion}</p>
+              <div className="pw-actions">
+                <Link className="pw-btn pw-btn-primary" to="/contacto" onClick={() => setSelected(null)}>Quiero algo así</Link>
+                {selected.enlace && (
+                  <a className="pw-btn pw-btn-ghost" href={selected.enlace} target="_blank" rel="noopener noreferrer">
+                    <Instagram size={16} /> Ver vídeo
+                  </a>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
-    </section>
+    </>
   );
 };
