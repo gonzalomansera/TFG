@@ -2,17 +2,90 @@
 
 @theme {
   --color-alhambra: #E08733;
-  --color-granada-dark: #0D0D0D;
+  --color-alhambra-soft: #ffb366;
+  --color-ink: #0A0A0A;
+  --color-ink-deep: #050505;
+  /* Tipo crema cálida (look editorial, no blanco puro) */
+  --color-cream: #EFE7D7;
+  --color-cream-dim: #B8AE9C;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* Titulares: Cinzel (capitulares romanas). Antes era Amatic SC, que sigue cargada en index.html */
+  --font-display: "Cinzel", "Times New Roman", serif;
+  --font-serif: "Cinzel", "Times New Roman", serif;
+  --font-cinzel: "Cinzel", "Times New Roman", serif;
 }
 
 :root {
-  background-color: #0D0D0D;
-  color: white;
-  /* Patrón de lacería árabe muy sutil para el fondo */
-  background-image: url('https://www.transparenttextures.com/patterns/arabesque.png');
+  background-color: #0A0A0A;
+  color: #EFE7D7;
+  color-scheme: dark;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: auto; /* el smooth-scroll lo gestiona Lenis */
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans);
+  background-color: #0A0A0A;
+  overflow-x: hidden;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Foco accesible y visible en toda la interfaz */
+:focus-visible {
+  outline: 2px solid var(--color-alhambra);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Selección de texto */
+::selection {
+  background: rgba(224, 135, 51, 0.3);
+  color: #fff;
+}
+
+/* Scrollbar discreta y coherente con la marca */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-alhambra);
+}
+
+/* Accesibilidad: respeta la reducción de movimiento del sistema */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

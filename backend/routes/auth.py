@@ -1,3 +1,6 @@
+import os
+import json
+import urllib.request
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -44,6 +47,58 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     
     access_token = auth_utils.create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer", "is_admin": user.is_admin == 1}
+
+
+class GoogleAuth(BaseModel):
+    access_token: str
+
+
+@router.post("/google")
+def google_login(data: GoogleAuth, db: Session = Depends(get_db)):
+    """Login con Google (solo administración). Verifica el access_token contra
+    Google, y concede acceso si el email es un admin existente o coincide con
+    ADMIN_EMAIL del entorno."""
+    try:
+        req = urllib.request.Request(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {data.access_token}"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            info = json.loads(r.read().decode())
+    except Exception:
+        raise HTTPException(status_code=401, detail="No se pudo verificar el acceso con Google")
+
+    email = (info.get("email") or "").strip().lower()
+    if not email or info.get("email_verified") is False:
+        raise HTTPException(status_code=401, detail="Email de Google no verificado")
+
+    admin_email = os.getenv("ADMIN_EMAIL", "").strip().lower()
+    user = db.query(models.Usuario).filter(models.Usuario.email == email).first()
+
+    # Alta/promoción automática del administrador definido en ADMIN_EMAIL
+    if admin_email and email == admin_email:
+        if user is None:
+            user = models.Usuario(
+                nombre=info.get("name", "Administrador"),
+                email=email,
+                hashed_password="",
+                telefono="",
+                is_admin=1,
+                foto_perfil=info.get("picture"),
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        elif user.is_admin != 1:
+            user.is_admin = 1
+            db.commit()
+
+    if user is None or user.is_admin != 1:
+        raise HTTPException(status_code=403, detail="Esta cuenta de Google no tiene acceso de administración")
+
+    access_token = auth_utils.create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer", "is_admin": True}
+
 
 @router.get("/me")
 def get_me(current_user: models.Usuario = Depends(auth_utils.get_current_user)):

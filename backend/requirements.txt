@@ -9,4 +9,3 @@ python-multipart
 python-dotenv
 cloudinary
 Pillow
-stripe

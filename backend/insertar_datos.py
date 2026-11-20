@@ -1,12 +1,13 @@
-import os
 import datetime
-from sqlalchemy.orm import Session
 from database import SessionLocal, engine, Base
-from models import Usuario, Obra, Cita, Post, Producto, Resena, Comentario, Like, LikeObra, Pedido, PedidoItem
+from models import Usuario, Obra, Cita, Post, Resena, Comentario, Like, LikeObra
 from auth_utils import get_password_hash
 
 # Asegurarse de que las tablas existan
 Base.metadata.create_all(bind=engine)
+
+TIPOS_TATUAJE = ["Tatuaje", "Dibujo", "Tatuaje", "Imaginería"]
+
 
 def seed_data():
     db = SessionLocal()
@@ -17,21 +18,17 @@ def seed_data():
         db.query(Comentario).delete()
         db.query(Resena).delete()
         db.query(Cita).delete()
-        db.query(PedidoItem).delete()
-        db.query(Pedido).delete()
         db.query(Post).delete()
         db.query(Obra).delete()
-        db.query(Producto).delete()
         db.query(Usuario).delete()
         db.commit()
 
         print("Iniciando inserción de datos...")
 
         # 1. Usuarios (15)
-        # Ahora usamos el generador real de tu app
         password_clara = "password123"
         hashed = get_password_hash(password_clara)
-        
+
         usuarios = []
         for i in range(1, 16):
             u = Usuario(
@@ -44,30 +41,30 @@ def seed_data():
             )
             db.add(u)
             usuarios.append(u)
-        db.commit() # Flush para obtener IDs
+        db.commit()
         print(f"Inserción completa: {len(usuarios)} usuarios.")
 
-        # 2. Obras (15)
+        # 2. Obras del portfolio (15) — tatuajes y diseños
         obras = []
         for i in range(1, 16):
             o = Obra(
-                titulo=f"Obra Maestra {i}",
-                descripcion=f"Esta es una descripción detallada de la obra número {i}. Técnica mixta sobre lienzo.",
-                tipo="Realismo" if i % 2 == 0 else "Abstracto",
-                imagen_url=f"https://picsum.photos/seed/obra{i}/800/600"
+                titulo=f"Pieza {i}",
+                descripcion=f"Tatuaje realizado a mano alzada. Proyecto número {i}, trabajo original de Jose Halconero.",
+                tipo=TIPOS_TATUAJE[i % len(TIPOS_TATUAJE)],
+                imagen_url=f"https://picsum.photos/seed/tattoo{i}/800/1000"
             )
             db.add(o)
             obras.append(o)
         db.commit()
         print(f"Inserción completa: {len(obras)} obras.")
 
-        # 3. Posts (Blog) (15)
+        # 3. Posts del diario (15) — se conservan en backend
         posts = []
         for i in range(1, 16):
             p = Post(
-                titulo=f"Noticia del Blog {i}",
-                contenido=f"Contenido extenso para el post número {i}. Hablando sobre técnicas de arte y novedades.",
-                categoria="Noticias" if i % 2 == 0 else "Tutoriales",
+                titulo=f"Entrada del diario {i}",
+                contenido=f"Notas de taller número {i}: proceso creativo, bocetos y novedades del estudio.",
+                categoria="Proceso Creativo" if i % 2 == 0 else "Eventos",
                 imagen_url=f"https://picsum.photos/seed/post{i}/1200/400",
                 fecha=datetime.date.today().isoformat()
             )
@@ -76,100 +73,60 @@ def seed_data():
         db.commit()
         print(f"Inserción completa: {len(posts)} posts.")
 
-        # 4. Merchandising (Productos) (15)
-        productos = []
-        for i in range(1, 16):
-            pr = Producto(
-                nombre=f"Producto {i}",
-                descripcion=f"Camiseta o accesorio exclusivo con diseño de Halconero {i}.",
-                precio=19.99 + i,
-                stock=10 + i,
-                imagen_url=f"https://picsum.photos/seed/prod{i}/400/400"
-            )
-            db.add(pr)
-            productos.append(pr)
-        db.commit()
-        print(f"Inserción completa: {len(productos)} productos.")
-
-        # 5. Citas (15)
+        # 4. Citas (15)
         for i in range(1, 16):
             c = Cita(
                 usuario_id=usuarios[i-1].id,
-                idea=f"Idea para tatuaje o encargo número {i}. Estilo neotradicional.",
+                idea=f"Idea para tatuaje número {i}. Estilo neotradicional, antebrazo.",
                 fecha_cita=(datetime.datetime.now() + datetime.timedelta(days=i)).strftime("%Y-%m-%dT%H:%M"),
                 estado="pendiente" if i % 3 != 0 else "confirmada"
             )
             db.add(c)
         print("Inserción completa: 15 citas.")
 
-        # 6. Reseñas (15)
+        # 5. Reseñas (15)
         for i in range(1, 16):
             r = Resena(
                 usuario_id=usuarios[i-1].id,
                 estrellas=5 if i % 2 == 0 else 4,
-                comentario=f"¡Increíble trabajo! El artista número {i} es un crack.",
+                comentario=f"Experiencia increíble en el estudio. Trabajo impecable ({i}).",
                 fecha=datetime.date.today().isoformat()
             )
             db.add(r)
         print("Inserción completa: 15 reseñas.")
 
-        # 7. Comentarios (15)
+        # 6. Comentarios (15)
         for i in range(1, 16):
             com = Comentario(
                 post_id=posts[i-1].id,
                 usuario_id=usuarios[i-1].id,
-                contenido=f"Muy interesante este post número {i}. ¡Gracias por compartir!",
+                contenido=f"Muy interesante esta entrada número {i}. ¡Gracias por compartir!",
                 fecha=datetime.date.today().isoformat()
             )
             db.add(com)
         print("Inserción completa: 15 comentarios.")
 
-        # 8. Likes (15)
+        # 7. Likes (15)
         for i in range(1, 16):
             lk = Like(post_id=posts[i-1].id, usuario_id=usuarios[i-1].id)
             db.add(lk)
         print("Inserción completa: 15 likes en posts.")
 
-        # 9. Likes Obras (15)
+        # 8. Likes Obras (15)
         for i in range(1, 16):
             lko = LikeObra(obra_id=obras[i-1].id, usuario_id=usuarios[i-1].id)
             db.add(lko)
         print("Inserción completa: 15 likes en obras.")
 
-        # 10. Pedidos (15)
-        pedidos = []
-        for i in range(1, 16):
-            ped = Pedido(
-                usuario_id=usuarios[i-1].id,
-                metodo_pago="Stripe / Card",
-                total=0.0, # Se calculará con los items
-                fecha=datetime.date.today().isoformat(),
-                estado="completado"
-            )
-            db.add(ped)
-            pedidos.append(ped)
         db.commit()
-
-        # 11. Pedido Items (15 - uno por pedido para simplificar)
-        for i in range(1, 16):
-            item = PedidoItem(
-                pedido_id=pedidos[i-1].id,
-                producto_id=productos[i-1].id,
-                cantidad=1,
-                precio_unitario=productos[i-1].precio
-            )
-            pedidos[i-1].total = productos[i-1].precio
-            db.add(item)
-        print("Inserción completa: 15 pedidos con sus items.")
-
-        db.commit()
-        print("\n¡ÉXITO! Se han insertado 15 registros en cada tabla.")
+        print("\n¡ÉXITO! Datos de ejemplo insertados.")
 
     except Exception as e:
         db.rollback()
         print(f"Error durante la inserción: {e}")
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     seed_data()

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -41,15 +41,6 @@ class Post(Base):
     likes = relationship("Like", back_populates="post", cascade="all, delete-orphan")
     comentarios = relationship("Comentario", back_populates="post", cascade="all, delete-orphan")
     
-class Producto(Base):
-    __tablename__ = "merchandising"
-    id = Column(Integer, primary_key=True, index=True)
-    nombre = Column(String, index=True)
-    descripcion = Column(Text)
-    precio = Column(Float) 
-    stock = Column(Integer)
-    imagen_url = Column(String)
-
 class Resena(Base):
     __tablename__ = "resenas"
     id = Column(Integer, primary_key=True, index=True)
@@ -81,24 +72,3 @@ class LikeObra(Base):
     obra_id = Column(Integer, ForeignKey("obras.id"))
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     obra = relationship("Obra", back_populates="likes")
-
-class Pedido(Base):
-    __tablename__ = "pedidos"
-    id = Column(Integer, primary_key=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"))
-    metodo_pago = Column(String)
-    total = Column(Float)
-    fecha = Column(String)
-    estado = Column(String, default="completado")
-    items = relationship("PedidoItem", back_populates="pedido", cascade="all, delete-orphan")
-    usuario = relationship("Usuario")
-
-class PedidoItem(Base):
-    __tablename__ = "pedido_items"
-    id = Column(Integer, primary_key=True, index=True)
-    pedido_id = Column(Integer, ForeignKey("pedidos.id"))
-    producto_id = Column(Integer, ForeignKey("merchandising.id"))
-    cantidad = Column(Integer)
-    precio_unitario = Column(Float)
-    pedido = relationship("Pedido", back_populates="items")
-    producto = relationship("Producto")
